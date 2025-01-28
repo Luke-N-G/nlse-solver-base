@@ -75,77 +75,6 @@ def plotinst(sim:Sim, fib:Fibra, AT, AW, Tlim=None, Wlim=None, Ylim=None, wavele
     else:
         plt.show()
     
-''' PLOTEVOL (!!LEGACY!!)
-plotevol: Grafica mapas de colores con la evolución del pulso y del espectro
-sim:            Parámetros de la simulación
-zlocs, AT, AW:  Resultados de SolveNLS 
-Tlim, Wlim:     Región donde graficar en tiempo y frecuencia (opcional). Unidades: [T] = ps, [W] = THz
-save:           Guardar imagen, el dpi se cambia manualmente (opcional)'''
-
-def plotevol(sim:Sim, fib:Fibra, zlocs, AT, AW, Tlim=None, Wlim=None, save=None, dB=None, wavelength=False, noshow=None, cmap="turbo"):
-    #Armamos la fig y los axes
-    fig, (ax1,ax2) = plt.subplots(1,2,sharey=True,figsize=(8.76,5)) #ax1: Pulso, ax2: Espectro
-
-    #Construimos los meshgrids para graficar
-    T_d, ZT = np.meshgrid(sim.tiempo, zlocs*1e-3)
-    if wavelength:
-        lamvec, AW = Adapt_Vector(sim.freq, fib.omega0, AW)
-        W_d, ZW = np.meshgrid(lamvec, zlocs*1e-3)
-    else:
-        W_d, ZW = np.meshgrid(2*np.pi*sim.freq, zlocs*1e-3)
-    P_T = Pot(np.stack(AT)) #Usamos np.stack para convertir los vectores AT, AW, en matrices
-    P_W = Pot(np.stack(AW))
-
-    #Numero de colores
-    lvl_num = 250
-
-    #-----Plot pulso-----    
-    if dB:
-        min_exp = -8 #Exponente mínimo, se usa para poder asignar colores donde el espectro vale == 0
-        min_draw = 1.000001 * 10.**min_exp #Si un valor está por debajo de 10**min_exp, le vamos a asignar este valor.
-        P_T_m = np.where(P_T < 10.**min_exp, min_draw, P_T)                          #Nos armamos el P_T corregido
-        levels = np.logspace(np.log10(P_T_m.min()), np.log10(P_T_m.max()), lvl_num)  #Armamos el array de niveles de colores en escala logaritmica
-        #Ver que onda sin el np.log10
-        surf=ax1.contourf(T_d ,ZT , P_T_m , levels=levels, cmap=cmap,norm=LogNorm()) #Plots, norm=LogNorm() da la escala
-    else:
-        surf=ax1.contourf(T_d, ZT, P_T, levels = lvl_num, cmap=cmap)
-    ax1.set_xlabel('Time (ps)',size=12)
-    ax1.set_ylabel('Distance (km)',size=12)
-    if Tlim:
-        ax1.set_xlim(Tlim)
-    ax1.set_title("Pulse evolution",size=15)
-
-    #-----Plot espectro-----
-    cb2 = fig.colorbar(surf, ax=ax1, label="$|A|^2$", location = "bottom", aspect=50)
-    cb2.ax.tick_params(labelsize=7)
-    if dB:
-        min_exp = -8 
-        min_draw = 1.000001 * 10.**min_exp 
-        P_W_m = np.where(P_W < 10.**min_exp, min_draw, P_W) 
-        levels = np.logspace(np.log10(P_W_m.min()), np.log10(P_W_m.max()), lvl_num)        
-        surf=ax2.contourf(W_d ,ZW , P_W , levels=levels, cmap=cmap, norm=LogNorm() )
-    else:
-        surf=ax2.contourf(W_d ,ZW , P_W ,levels=lvl_num, cmap=cmap, vmin=0, vmax=.5e7)
-    if wavelength:
-        ax2.set_xlabel("Wavelength (nm)",size=12)
-    else:
-        ax2.set_xlabel('Frequency (THz)',size=12)
-    if Wlim:
-        ax2.set_xlim(Wlim)
-    ax2.set_title("Spectrum evolution",size=15)
-    cb1 = fig.colorbar(surf, ax=ax2, label="$|A|^2$", location = "bottom", aspect=50)
-    cb1.ax.tick_params(labelsize=7)
-    ax2.set_facecolor('black')
-    ax1.tick_params(labelsize=10)
-    ax2.tick_params(labelsize=10)
-    plt.tight_layout()
-    if save:
-        plt.savefig(save, dpi=800)
-    if noshow:
-        plt.close()
-    else:
-        plt.show()
- 
     
 ''' PLOTCMAP
 plotcmap: Grafica mapas de colores con la evolución del pulso y del espectro
@@ -153,7 +82,6 @@ sim:            Parámetros de la simulación
 zlocs, AT, AW:  Resultados de SolveGNLSE/Solvepcnlse/SolvepcGNLSE
 wavelength:     Boolean, si "True" grafica el espectro en longitud de onda                  (opcional)
 dB:             Boolean, si "True" grafica la potencia en dB                                (opcional)
-legacy:         Boolean, si "True" admite vectores AT, AW de formato (zlocs,)               (opcional)
 Tlim, Wlim:     Región donde graficar en tiempo y frecuencia. Unidades: [T] = ps, [W] = THz (opcional)
 vlims:          Vector de 4 elementos [vmin_t,vmax_t,vmin_w,vmax_w], limites del cmap       (opcional)
 cmap:           Colormap de matplotlib, default "turbo"                                     (opcional)
@@ -167,7 +95,7 @@ def format_func(value, tick_number):
 #----------------------------------------------------------------------------------------
 
 def plotcmap(sim:Sim, fib:Fibra, zlocs, AT, AW, wavelength=False, dB=False,
-             legacy=False, vlims=[], cmap="turbo", Tlim=None, Wlim=None,
+             vlims=[], cmap="turbo", Tlim=None, Wlim=None,
              zeros=False, save=None, noshow=False, plot_type="both"):
 
     #Labels y tamaños
@@ -175,12 +103,6 @@ def plotcmap(sim:Sim, fib:Fibra, zlocs, AT, AW, wavelength=False, dB=False,
     tick_size      = 10
     m_label_size   = 12
     M_label_size   = 15
-
-    
-    #Adaptamos los vectores viejos a matrices, de ser necesario
-    if legacy:
-        AT = np.stack(AT)
-        AW = np.stack(AW)
     
     #Vectores de potencia, y listas "extent" para pasarle a imshow
     P_T = Pot(AT)
@@ -332,8 +254,6 @@ def plotspecgram(sim:Sim, fib:Fibra, AT, Tlim=None, Wlim=None, end=-1, save=None
         plt.legend(loc="best")
     plt.xlabel("Time (ps)")
     plt.ylabel("Frequency (THz)")
-    #plt.xticks(fontsize=15)
-    #plt.yticks(fontsize=15)
     plt.tight_layout()
     if Wlim:
         plt.xlim(Tlim)
@@ -439,54 +359,6 @@ def plotfotones(sim:Sim, zlocs, AW, lambda0 = 1550, save=None):
 def plotchirp(t, pulso): #Pendiente
     return None
 
-
-def plot_time(sim:Sim, fib:Fibra, zlocs, AT, Tlim=None, save=None, dB=None, vlim=None, noshow=None, cmap="turbo"):
-    #Armamos la fig y los axes
-    fig, ax1 = plt.subplots(1,1) #ax1: Pulso, ax2: Espectro
-
-    #Construimos los meshgrids para graficar
-    T_d, ZT = np.meshgrid(sim.tiempo, zlocs*1)
-
-    P_T = Pot(np.stack(AT)) #Usamos np.stack para convertir los vectores AT, AW, en matrices
-
-    #Colormap a utilizar
-    cmap = cmap
-
-    #Numero de colores
-    lvl_num = 250
-
-    #-----Plot pulso-----    
-    if dB:
-        min_exp = -8 #Exponente mínimo, se usa para poder asignar colores donde el espectro vale == 0
-        min_draw = 1.000001 * 10.**min_exp #Si un valor está por debajo de 10**min_exp, le vamos a asignar este valor.
-        P_T_m = np.where(P_T < 10.**min_exp, min_draw, P_T)                          #Nos armamos el P_T corregido
-        levels = np.logspace(np.log10(P_T_m.min()), np.log10(P_T_m.max()), lvl_num)  #Armamos el array de niveles de colores en escala logaritmica
-        #Ver que onda sin el np.log10
-        surf=ax1.contourf(T_d ,ZT , P_T_m , levels=levels, cmap=cmap, norm=LogNorm()) #Plots, norm=LogNorm() da la escala
-    else:
-        if vlim:
-            surf=ax1.contourf(T_d, ZT, P_T, levels = lvl_num, cmap=cmap, vmin = vlim[0], vmax = vlim[-1])
-        else:
-            surf=ax1.contourf(T_d, ZT, P_T, levels = lvl_num, cmap=cmap)
-    ax1.set_xlabel('Tiempo (ps)', size=15)
-    ax1.set_ylabel('Distancia (m)', size=15)
-    ax1.tick_params(labelsize=10)
-    #ax1.tick_params(axis='both', which='major', labelsize=20)
-    if Tlim:
-        ax1.set_xlim(Tlim)
-    #ax1.set_title("Pulse evolution")
-
-    #-----Plot espectro-----
-    #cb2 = fig.colorbar(surf, ax=ax1, label="$|A|^2$", location = "bottom", aspect=50)
-    #cb2.ax.tick_params(labelsize=7)
-
-    plt.tight_layout()
-    if save:
-        plt.savefig(save, dpi=1200)
-    if noshow:
-        plt.close()
-    else:
-        plt.show()
 
 
 
