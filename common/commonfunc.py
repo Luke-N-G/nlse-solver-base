@@ -11,34 +11,13 @@ import pickle
 import datetime
 
 
-# =============================================================================
-# FFTs viejas, conservar en caso de que las nuevas no funcionen bien.
-# #FFT siguiendo la convención -iw (Agrawal)
-# def FT(pulso):
-#     return ifft(pulso) * len(pulso)
-# 
-# #IFFT siguiendo la convención -iw
-# def IFT(espectro):
-#     return fft(espectro) / len(espectro)
-# =============================================================================
-
 # FFT siguiendo la convención -iw (Agrawal)
 def FT(pulso):
-    if pulso.ndim == 1:
-        return ifft(pulso) * len(pulso)
-    elif pulso.ndim == 2:
-        return ifft(pulso, axis=1) * pulso.shape[1]
-    else:
-        raise ValueError("Input must be a 1D or 2D array")
+    return ifft(pulso, axis=1) * pulso.shape[1]
 
 # IFFT siguiendo la convención -iw
 def IFT(espectro):
-    if espectro.ndim == 1:
-        return fft(espectro) / len(espectro)
-    elif espectro.ndim == 2:
-        return fft(espectro, axis=1) / espectro.shape[1]
-    else:
-        raise ValueError("Input must be a 1D or 2D array")
+    return fft(espectro, axis=1) / espectro.shape[1]
 
 #Pasamos de array tiempo a array frecuencia
 def t_a_freq(t_o_freq):
@@ -115,18 +94,7 @@ def Adapt_Vector(freq, omega0, Aw):
     lambda_vec = 299792458 * (1e9)/(1e12) / (freq + omega0/(2*np.pi))
     sort_indices = lambda_vec.argsort()
     lambda_vec_ordered = lambda_vec[sort_indices]
-    
-    #Esto es para identificar los distintos tipos de arrays con los que trabajamos
-    if Aw.ndim == 1:
-        if Aw.dtype == object:  # Aw es un array de objetos
-            Alam = np.array([aw[sort_indices] for aw in Aw])
-        else:  # Aw es un array 1D
-            Alam = Aw[sort_indices]
-    elif Aw.ndim == 2:  # Aw es un array 2D (El estandar)
-        Alam = Aw[:, sort_indices]
-    else:
-        raise ValueError("AW debe ser un array 1D o 2D")
-
+    Alam = Aw[:, sort_indices]
     return lambda_vec_ordered, Alam
 
 
@@ -198,15 +166,14 @@ def beta2w(freq, fib:Fibra):
 
 #%% Funciones para guardar y cargar datos
 
-
-# Guardando (BAJO PRUEBA!)
+# Guardando
 def saver(AW, AT, sim:Sim, fib:Fibra, filename, other_par = None):
     # Guardando los parametros de simulación y de la fibra en un diccionario.
     metadata = {'Sim': sim.__dict__, 'Fibra': fib.__dict__} #sim.__dict__ = {'puntos'=N, 'Tmax'=70, ...}
 
     # Guardando los datos en filename-data.txt con pickle para cargar después.
     with open(f"{filename}-data.txt", 'wb') as f:
-        pickle.dump((AW, AT, metadata), f)
+        pickle.dump((AW, metadata), f)
         
     # Guardar parametros filename-param.txt para leer directamente.
     with open(f"{filename}-param.txt", 'w') as f:
@@ -227,7 +194,8 @@ def saver(AW, AT, sim:Sim, fib:Fibra, filename, other_par = None):
 # Cargando datos
 def loader(filename, resim = None):
     with open(f"{filename}-data.txt", 'rb') as f:
-        AW, AT, metadata = pickle.load(f)
+        AW, metadata = pickle.load(f)
+        AT = IFT(AW)
     if resim:
         sim, fibra = ReSim(metadata)
         return AW, AT, sim, fibra
@@ -255,80 +223,4 @@ def ReSim(metadata):
     
     fibra = Fibra(**fib_m)
     return sim, fibra
-
-
-
-#%% Saver antiguo
-
-#Guardado
-# =============================================================================
-# def saver(AW, AT, sim:Sim, fib:Fibra, filename, other_par = None):
-#     
-#     #Guardamos los parámetros de la fibra y simulación en un diccionario
-#     metadata = {}
-#     metadata['Sim']   = {}
-#     metadata['Sim']['puntos']    = sim.puntos
-#     metadata['Sim']['Tmax']      = sim.Tmax
-#     metadata['Fibra'] = {}
-#     metadata['Fibra']['L']       = fib.L
-#     metadata['Fibra']['beta2']   = fib.beta2
-#     metadata['Fibra']['beta3']   = fib.beta3
-#     metadata['Fibra']['gamma']   = fib.gamma
-#     metadata['Fibra']['gamma1']  = fib.gamma1
-#     metadata['Fibra']['alpha']   = fib.alpha
-#     metadata['Fibra']['lambda0'] = fib.lambda0
-#     metadata['Fibra']['TR']      = fib.TR
-#     metadata['Fibra']['fR']      = fib.fR
-#     metadata['Fibra']['ZNW']     = fib.znw
-#     metadata['Fibra']['ZDW']     = fib.zdw
-#     
-#     #Se guardan los datos a filename-data.txt con pickle para cargar más adelante.
-#     with open(filename+"-data.txt", 'wb') as f:
-#         pickle.dump(((AW, AT, metadata)), f)
-#         
-#     #Se guardan los parámetros a filename-param.txt para leer de ser necesario.
-#     with open(filename+'-param.txt', 'w') as f:
-#         lines = ['-------------Parameters-------------\n']
-#         lines.append(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')+"\n\n")
-#         lines.append('-Sim: \n \n')
-#         for i in metadata['Sim']:
-#             lines.append(i+' = '+str(metadata['Sim'][i])+"\n")
-#         lines.append('\n\n-Fibra: \n \n')
-#         for i in metadata['Fibra']:
-#             lines.append(i+' = '+str(metadata['Fibra'][i])+"\n")
-#         if other_par:
-#             lines.append("\n\n-Other Parameters:\n\n")
-#             for i in other_par:
-#                 if type(i) == str:
-#                     lines.append(i)
-#                 else:
-#                     lines.append(str(i)+'\n')
-#         f.writelines(lines)
-# 
-# #Cargado de datos
-# def loader(filename, resim = None):
-#     with open(filename+"-data.txt", 'rb') as f:
-#         AW, AT, metadata = pickle.load(f)
-#     if resim:
-#         sim, fibra = ReSim(metadata)
-#         return AW, AT, sim, fibra
-#     else:
-#         return AW, AT, metadata
-# 
-# #Cargado de metadata en clases para simular con parámetros viejos
-# #Devuelve objetos sim:Sim y fib:Fibra, ya cargado con datos.
-# def ReSim(metadata):
-#     
-#     #Definimos variables auxiliares para comprimir un poco la notación
-#     sim_m = metadata['Sim']
-#     fib_m = metadata['Fibra']
-#     
-#     #Cargamos los parámetros guardados en metadata a la clases Sim y Fibra, devolviendo objetos sim y fibra.
-#     sim   = Sim(sim_m['puntos'], sim_m['Tmax'])
-#     fibra = Fibra(L=fib_m['L'], beta2=fib_m['beta2'], beta3=fib_m['beta3'],
-#                   gamma=fib_m['gamma'], gamma1=fib_m['gamma1'], alpha=fib_m['alpha'],
-#                   lambda0=fib_m['lambda0'], TR=fib_m['TR'], fR=fib_m['fR'])
-#     return sim, fibra
-# 
-# =============================================================================
 
