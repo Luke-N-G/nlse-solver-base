@@ -2,7 +2,7 @@
 """
 Created on Fri Jun 30 10:43:33 2023
 
-@author: d/dt Lucas
+@author: d/dt Lucas (t)
 """
 #%%--------------Imports------------------
 import numpy as np
