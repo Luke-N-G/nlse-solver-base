@@ -5,7 +5,7 @@ Created on Fri Aug 11 11:00:09 2023
 @author: d/dt Lucas
 """
 
-from common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra
+from ..common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra
 import numpy as np
 from scipy.integrate import solve_ivp  #Para resolver eq. diferenciales ordinarias
 from functools import partial          #Permite evaluar parcialmente una función g(x,y) = partial(f(x,y,z), z = 2)

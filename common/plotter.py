@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.colors import LogNorm
 import numpy as np
-from common.commonfunc import Pot, fftshift, Sim, Fibra, num_fotones, Adapt_Vector
+from ..common.commonfunc import Pot, fftshift, Sim, Fibra, num_fotones, Adapt_Vector
 from scipy.interpolate import interp1d
 from scipy.interpolate import CubicSpline
 
