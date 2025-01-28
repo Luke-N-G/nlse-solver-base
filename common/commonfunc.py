@@ -13,11 +13,21 @@ import datetime
 
 # FFT siguiendo la convención -iw (Agrawal)
 def FT(pulso):
-    return ifft(pulso, axis=1) * pulso.shape[1]
+    if pulso.ndim == 1:
+        return ifft(pulso) * len(pulso)
+    elif pulso.ndim == 2:
+        return ifft(pulso, axis=1) * pulso.shape[1]
+    else:
+        raise ValueError("Input must be a 1D or 2D array")
 
 # IFFT siguiendo la convención -iw
 def IFT(espectro):
-    return fft(espectro, axis=1) / espectro.shape[1]
+    if espectro.ndim == 1:
+        return fft(espectro) / len(espectro)
+    elif espectro.ndim == 2:
+        return fft(espectro, axis=1) / espectro.shape[1]
+    else:
+        raise ValueError("Input must be a 1D or 2D array")
 
 #Pasamos de array tiempo a array frecuencia
 def t_a_freq(t_o_freq):
