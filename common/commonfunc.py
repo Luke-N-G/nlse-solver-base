@@ -264,7 +264,6 @@ class Fibra2:
         ZDW = 2 * np.pi * 299792458 * (1e9) / (1e12) / w_zdw
         return ZDW
 
-
 #Data: Guarda los resultados de la simulación
 class Data:
     def __init__(self, AW, zlocs, fib:Fibra = None, sim:Sim = None):
@@ -272,7 +271,7 @@ class Data:
         self.z = zlocs
         
         if fib:
-            self.fibra = fib
+            self.fib = fib
         if sim:
             self.sim = sim
     
