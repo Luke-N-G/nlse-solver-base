@@ -189,7 +189,7 @@ class Fibra2:
         else:
             self.beta2 = beta2
             self.beta3 = beta3
-            self.betas = [beta2, beta3]
+            self.betas = [beta2, beta3] if beta2 is not None and beta3 is not None else []
 
         if self.beta3 != 0:
             self.w_zdw = -self.beta2 / self.beta3 + self.omega0
