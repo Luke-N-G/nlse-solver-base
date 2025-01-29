@@ -172,7 +172,7 @@ class Fibra:
     
     
 class Fibra2:
-    def __init__(self, L,  gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, beta2=None, beta3=None, betas=None):
+    def __init__(self, L, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, beta2=None, beta3=None, betas=None):
         self.L = L  # Longitud de la fibra
         self.gamma = gamma  # gamma de la fibra, para calcular SPM
         self.gamma1 = gamma1  # gamma1 de la fibra, para self-steepening
@@ -187,9 +187,9 @@ class Fibra2:
             self.beta2 = betas[0]
             self.beta3 = betas[1] if len(betas) > 1 else 0
         else:
+            self.betas = [beta2, beta3] if beta2 is not None and beta3 is not None else [0, 0]
             self.beta2 = beta2
             self.beta3 = beta3
-            self.betas = [beta2, beta3] if beta2 is not None and beta3 is not None else []
 
         if self.beta3 != 0:
             self.w_zdw = -self.beta2 / self.beta3 + self.omega0
@@ -225,7 +225,7 @@ class Fibra2:
             self.betas[1] = value
         else:
             self.betas.append(value)
-            
+
     # Método para pasar de omega a lambda
     def omega_to_lambda(self, w):
         return 2 * np.pi * 299792458 * (1e9) / (1e12) / (self.omega0 + w)
@@ -251,6 +251,18 @@ class Fibra2:
         else:
             beta2 = self.beta2 + self.beta3 * w
         return beta2
+
+    def calculate_zdw(self):
+        # Solve the polynomial equation for omega
+        coefficients = self.betas[::-1]
+        omega_solutions = np.roots(coefficients)
+
+        # Convert to absolute frequency
+        w_zdw = omega_solutions + self.omega0
+
+        # Calculate ZDW
+        ZDW = 2 * np.pi * 299792458 * (1e9) / (1e12) / w_zdw
+        return ZDW
 
 
 #Ver como meter esto en la clase Fibra directamente.
