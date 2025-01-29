@@ -265,9 +265,24 @@ class Fibra2:
         return ZDW
 
 
-#Ver como meter esto en la clase Fibra directamente.
-def beta2w(freq, fib:Fibra):
-    return fib.beta2 + fib.beta3  * (2*np.pi*freq)
+#Data: Guarda los resultados de la simulación
+class Data:
+    def __init__(self, AW, zlocs, fib:Fibra = None, sim:Sim = None):
+        self.W = AW
+        self.z = zlocs
+        
+        if fib:
+            self.fibra = fib
+        if sim:
+            self.sim = sim
+    
+    @property
+    def T(self):
+        return IFT(self.W)
+    
+    @property
+    def Ws(self):
+        return fftshift( self.W )
 
 #%% Funciones para guardar y cargar datos
 
