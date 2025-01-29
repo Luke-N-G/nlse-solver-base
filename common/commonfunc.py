@@ -108,8 +108,9 @@ def Adapt_Vector(freq, omega0, Aw):
     return lambda_vec_ordered, Alam
 
 
-#Defino clases que guarden tanto los parámetros de la simulación como los de la fibra
+#%%-------------CLASES---------------------
 
+#Sim: Guarda los parámetros de simulación
 class Sim:
     def __init__(self, puntos, Tmax):
         self.puntos = puntos                         #Número de puntos sobre el cual tomar el tiempo
@@ -119,7 +120,7 @@ class Sim:
         self.dW     = np.pi/Tmax
         self.freq   = fftshift( np.pi * np.arange(-puntos/2,puntos/2) / Tmax )/(2*np.pi)
         
-
+#Fibra: Guarda los parámetros de la fibra, más algunos métodos útiles.
 class Fibra:
     def __init__(self, L, beta2, beta3, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, betas=0 ):
         self.L  = L         #Longitud de la fibra
@@ -165,6 +166,86 @@ class Fibra:
             beta2 = 0
             for i, beta in enumerate(self.betas):
                 beta2 += beta * w**i / np.math.factorial(i)
+        else:
+            beta2 = self.beta2 + self.beta3 * w
+        return beta2
+    
+    
+class Fibra2:
+    def __init__(self, L,  gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, beta2=None, beta3=None, betas=None):
+        self.L = L  # Longitud de la fibra
+        self.gamma = gamma  # gamma de la fibra, para calcular SPM
+        self.gamma1 = gamma1  # gamma1 de la fibra, para self-steepening
+        self.alpha = alpha  # alpha de la fibra, atenuación
+        self.TR = TR  # TR de la fibra, para calcular Raman
+        self.fR = fR  # fR de la fibra, para calcular Raman (y self-steepening)
+        self.lambda0 = lambda0  # Longitud de onda central
+        self.omega0 = 2 * np.pi * 299792458 * (1e9) / (1e12) / lambda0  # Frecuencia (angular) central
+
+        if betas is not None:
+            self.betas = betas
+            self.beta2 = betas[0]
+            self.beta3 = betas[1] if len(betas) > 1 else 0
+        else:
+            self.beta2 = beta2
+            self.beta3 = beta3
+            self.betas = [beta2, beta3]
+
+        if self.beta3 != 0:
+            self.w_zdw = -self.beta2 / self.beta3 + self.omega0
+            self.zdw = 2 * np.pi * 299792458 * (1e9) / (1e12) / self.w_zdw
+        else:
+            self.w_zdw = None
+            self.zdw = None
+
+        if self.gamma1 != 0:
+            self.w_znw = -self.gamma / self.gamma1 + self.omega0
+            self.znw = 2 * np.pi * 299792458 * (1e9) / (1e12) / self.w_znw
+        else:
+            self.w_znw = None
+            self.znw = None
+
+    @property
+    def beta2(self):
+        return self.betas[0]
+
+    @beta2.setter
+    def beta2(self, value):
+        self.betas[0] = value
+
+    @property
+    def beta3(self):
+        return self.betas[1] if len(self.betas) > 1 else 0
+
+    @beta3.setter
+    def beta3(self, value):
+        if len(self.betas) > 1:
+            self.betas[1] = value
+        else:
+            self.betas.append(value)
+
+    # Método para pasar de omega a lambda
+    def omega_to_lambda(self, w):
+        return 2 * np.pi * 299792458 * (1e9) / (1e12) / (self.omega0 + w)
+
+    # Método para pasar de lambda a Omega
+    def lambda_to_omega(self, lam):
+        return 2 * np.pi * 299792458 * (1e9) / (1e12) * (1 / lam - 1 / self.lambda0)
+
+    # Método para calcular gamma en función de omega
+    def gamma_w(self, w, wavelength=False):
+        if wavelength:
+            w = self.lambda_to_omega(w)
+        return self.gamma + self.gamma1 * w
+
+    # Método para calcular beta2 en función de omega
+    def beta2_w(self, w, wavelength=False):
+        if wavelength:
+            w = self.lambda_to_omega(w)
+        if self.betas != 0:
+            beta2 = 0
+            for i, beta in enumerate(self.betas):
+                beta2 += beta * w ** i / np.math.factorial(i)
         else:
             beta2 = self.beta2 + self.beta3 * w
         return beta2
