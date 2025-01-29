@@ -211,6 +211,8 @@ class Fibra2:
 
     @beta2.setter
     def beta2(self, value):
+        if not self.betas:
+            self.betas = [0] * 2
         self.betas[0] = value
 
     @property
@@ -223,7 +225,7 @@ class Fibra2:
             self.betas[1] = value
         else:
             self.betas.append(value)
-
+            
     # Método para pasar de omega a lambda
     def omega_to_lambda(self, w):
         return 2 * np.pi * 299792458 * (1e9) / (1e12) / (self.omega0 + w)
