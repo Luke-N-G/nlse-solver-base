@@ -6,6 +6,7 @@ Created on Fri Jun 30 10:37:39 2023
 """
 
 import numpy as np
+import re
 from scipy.fftpack import fft, ifft, fftshift, ifftshift, fftfreq
 import pickle
 import datetime
@@ -108,75 +109,77 @@ def Adapt_Vector(freq, omega0, Aw):
     return lambda_vec_ordered, Alam
 
 
+class Units:
+    def __init__(self):
+        
+        self.constants = { "c": 299792458, "h": 6.62607015e-34, "hb": 6.62607015e-34/(2*np.pi) }
+        
+        self.metric_prefixes = {
+            'Y': 1e24, 'Z': 1e21, 'E': 1e18, 'P': 1e15, 'T': 1e12, 'G': 1e9, 'M': 1e6, 'k': 1e3,
+            'h': 1e2, 'da': 1e1, '': 1, 'o':1, 'd': 1e-1, 'c': 1e-2, 'm': 1e-3, 'u': 1e-6, 'n': 1e-9,
+            'p': 1e-12, 'f': 1e-15, 'a': 1e-18, 'z': 1e-21, 'y': 1e-24
+        }
+
+    def parse_unit(self, unit):
+        # Regular expression to match the unit and its optional exponent
+        pattern = re.compile(r'([a-zA-Zµ]+)(?:\^(-?\d+))?')
+        matches = pattern.findall(unit)
+        parsed = {}
+        for prefix, exp in matches:
+            if prefix in parsed:
+                parsed[prefix] += int(exp) if exp else 1
+            else:
+                parsed[prefix] = int(exp) if exp else 1
+        return parsed
+
+    def convert_unit(self, original_unit, target_unit):
+        original_parsed = self.parse_unit(original_unit)
+        target_parsed = self.parse_unit(target_unit)
+
+        conversion_factor = 1.0
+
+        for prefix, exp in original_parsed.items():
+            if prefix in target_parsed:
+                target_exp = target_parsed[prefix]
+                conversion_factor *= (self.metric_prefixes[prefix] ** (exp - target_exp))
+            else:
+                conversion_factor *= (self.metric_prefixes[prefix] ** exp)
+
+        for prefix, exp in target_parsed.items():
+            if prefix not in original_parsed:
+                conversion_factor /= (self.metric_prefixes[prefix] ** exp)
+
+        return conversion_factor
+
 #%%-------------CLASES---------------------
 
 #Sim: Guarda los parámetros de simulación
 class Sim:
     def __init__(self, puntos, Tmax):
-        self.puntos = puntos                         #Número de puntos sobre el cual tomar el tiempo
-        self.Tmax   = Tmax
-        self.paso_t = 2.0*Tmax/puntos
-        self.tiempo = np.arange(-puntos/2,puntos/2)*self.paso_t
-        self.dW     = np.pi/Tmax
-        self.freq   = fftshift( np.pi * np.arange(-puntos/2,puntos/2) / Tmax )/(2*np.pi)
+        self.puntos = puntos #Num. de puntos de tiempo
+        self.Tmax   = Tmax   #Span de tiempo [-Tmax,Tmax]
+        self.paso_t = 2.0*Tmax/puntos #Step temporal
+        self.tiempo = np.arange(-puntos/2,puntos/2)*self.paso_t #Vector de tiempos
+        self.dW     = np.pi/Tmax #Step en frecuencia
+        self.freq   = fftshift( np.pi * np.arange(-puntos/2,puntos/2) / Tmax )/(2*np.pi) #Vector frecuencia (1/s)
         
-    @property
+    @property #Frecuencia shifteada
     def sfreq(self):
         return fftshift(self.freq)
+    @property #Frecuencia angular
+    def omega(self):
+        return 2*np.pi*self.freq
+    @property #Frecuencia angular shifteada
+    def somega(self):
+        return fftshift( 2*np.pi*self.freq )
+    @property #Vector longitud de onda
+    def lam(self, omega0):
+        lam_vec, _ = Adapt_Vector(self.freq, omega0, np.zeros([1, self.freq.size]) )
+        return lam_vec
         
 #Fibra: Guarda los parámetros de la fibra, más algunos métodos útiles.
 class Fibra:
-    def __init__(self, L, beta2, beta3, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, betas=0 ):
-        self.L  = L         #Longitud de la fibra
-        self.beta2 = beta2  #beta_2 de la fibra, para calcular GVD
-        self.beta3 = beta3  #beta_3 de la fibra, para calcular TOD
-        self.betas = betas  #Vector con los coeficientes beta
-        self.gamma = gamma  #gamma de la fibra, para calcular SPM
-        self.gamma1= gamma1 #gamma1 de la fibra, para self-steepening
-        self.alpha = alpha  #alpha de la fibra, atenuación
-        self.TR    = TR     #TR de la fibra, para calcular Raman
-        self.fR    = fR     #fR de la fibra, para calcular Raman (y self-steepening)
-        self.lambda0 = lambda0 #Longitud de onda central
-        self.omega0  = 2*np.pi* 299792458 * (1e9)/(1e12) /lambda0 #Frecuencia (angular) central
-        if self.beta3 != 0:
-            self.w_zdw = -self.beta2/self.beta3 + self.omega0
-            self.zdw   = 2*np.pi* 299792458 * (1e9)/(1e12) / self.w_zdw
-        else:
-            self.w_zdw = None
-            self.zdw   = None
-        if self.gamma1 != 0:
-            self.w_znw = -self.gamma/self.gamma1 + self.omega0
-            self.znw   = 2*np.pi* 299792458 * (1e9)/(1e12) /self.w_znw
-        else:
-            self.w_znw = None
-            self.znw   = None
-    
-    #---Algunos métodos útiles---
-    #Método para pasar de omega a lambda
-    def omega_to_lambda(self, w):  #Función para pasar de Omega a lambda.
-        return 2*np.pi* 299792458 * (1e9)/(1e12)/(self.omega0+w)
-    def lambda_to_omega(self,lam): #Función para pasar de lambda a Omega.
-        return 2*np.pi*299792458 * (1e9)/(1e12) * (1/lam - 1/self.lambda0)
-    #Método para calcular gamma en función de omega
-    def gamma_w(self, w, wavelength=False):
-        if wavelength:
-            w = self.lambda_to_omega(w)
-        return self.gamma + self.gamma1 * w
-    #Método para calcular beta2 en función de omega
-    def beta2_w(self, w, wavelength=False):
-        if wavelength:
-            w = self.lambda_to_omega(w)
-        if self.betas != 0:
-            beta2 = 0
-            for i, beta in enumerate(self.betas):
-                beta2 += beta * w**i / np.math.factorial(i)
-        else:
-            beta2 = self.beta2 + self.beta3 * w
-        return beta2
-    
-    
-class Fibra2:
-    def __init__(self, L, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, beta2=None, beta3=None, betas=None):
+    def __init__(self, L, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, beta2=0, beta3=0, betas=None):
         self.L = L  # Longitud de la fibra
         self.gamma = gamma  # gamma de la fibra, para calcular SPM
         self.gamma1 = gamma1  # gamma1 de la fibra, para self-steepening
@@ -289,36 +292,12 @@ class Data:
     def save(self, filename, other_par=None):
         fib = getattr(self, "fib", None)
         sim = getattr(self, "sim", None)
-        saver2(self, filename, other_par)
+        saver(self, filename, other_par)
 
 #%% Funciones para guardar y cargar datos
 
-# Guardando
-def saver(AW, AT, sim:Sim, fib:Fibra, filename, other_par = None):
-    # Guardando los parametros de simulación y de la fibra en un diccionario.
-    metadata = {'Sim': sim.__dict__, 'Fibra': fib.__dict__} #sim.__dict__ = {'puntos'=N, 'Tmax'=70, ...}
-
-    # Guardando los datos en filename-data.txt con pickle para cargar después.
-    with open(f"{filename}-data.txt", 'wb') as f:
-        pickle.dump((AW, metadata), f)
-        
-    # Guardar parametros filename-param.txt para leer directamente.
-    with open(f"{filename}-param.txt", 'w') as f:
-        f.write('-------------Parameters-------------\n')
-        f.write(f'{datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")}\n\n')
-        for class_name, class_attrs in metadata.items():
-            f.write(f'\n-{class_name}:\n\n')
-            for attr, value in class_attrs.items():
-                f.write(f'{attr} = {value}\n')
-        if other_par:
-            f.write("\n\n-Other Parameters:\n\n")
-            if isinstance(other_par, str):
-                f.write(f'{other_par}\n')
-            else:
-                for i in other_par:
-                    f.write(f'{str(i)}\n')
-                    
-def saver2(data:Data, filename, other_par = None):
+# Guardando         
+def saver(data:Data, filename, other_par = None):
     # Guardando los parametros de simulación y de la fibra en un diccionario.
     metadata = {'Sim': data.sim.__dict__, 'Fibra': data.fib.__dict__} #sim.__dict__ = {'puntos'=N, 'Tmax'=70, ...}
 
@@ -342,41 +321,10 @@ def saver2(data:Data, filename, other_par = None):
                 for i in other_par:
                     f.write(f'{str(i)}\n')
 
-# Cargando datos
-def loader(filename, resim = None):
-    with open(f"{filename}-data.txt", 'rb') as f:
-        AW, metadata = pickle.load(f)
-        AT = IFT(AW)
-    if resim:
-        sim, fibra = ReSim(metadata)
-        return AW, AT, sim, fibra
-    else:
-        return AW, AT, metadata
-    
-def loader2(filename):
+# Cargando datos    
+def loader(filename):
     with open(f"{filename}-data.txt", 'rb') as f:
         data = pickle.load(f)
     return data
 
-# Cargando metadata en las clases
-# Devuelve objetos sim:Sim and fib:Fibra objects, ya cargados con los parámetros.
-
-def ReSim(metadata):
-    # Define the parameters that Sim class's __init__ method accepts
-    sim_params = ['puntos', 'Tmax']
-    
-    # Filter the metadata to only include the parameters that Sim class's __init__ method accepts
-    sim_m = {k: v for k, v in metadata['Sim'].items() if k in sim_params}
-    
-    # Load the saved parameters in metadata to the Sim and Fibra classes, returning sim and fibra objects.
-    sim = Sim(**sim_m)
-    
-    # Define the parameters that Fibra class's __init__ method accepts
-    fibra_params = ['L', 'beta2', 'beta3', 'gamma', 'gamma1', 'alpha', 'lambda0', 'TR', 'fR', 'betas']
-    
-    # Filter the metadata to only include the parameters that Fibra class's __init__ method accepts
-    fib_m = {k: v for k, v in metadata['Fibra'].items() if k in fibra_params}
-    
-    fibra = Fibra(**fib_m)
-    return sim, fibra
 
