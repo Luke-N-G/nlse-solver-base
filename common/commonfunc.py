@@ -266,22 +266,26 @@ class Fibra2:
 
 #Data: Guarda los resultados de la simulación
 class Data:
-    def __init__(self, AW, zlocs, fib:Fibra = None, sim:Sim = None):
-        self.W = AW
-        self.z = zlocs
-        
-        if fib:
-            self.fib = fib
-        if sim:
-            self.sim = sim
+    def __init__(self, solve_function, *args, **kwargs):
+        self.z, self.W = solve_function(*args, **kwargs)
+        self.fib = kwargs.get("fibra")
+        self.sim = kwargs.get("sim")
     
+    #Definimos la propiedad A.T = Evolución en tiempo
     @property
     def T(self):
         return IFT(self.W)
     
+    #Definimos la propiedad A.Ws = Evolución espectral shifteada
     @property
     def Ws(self):
         return fftshift( self.W )
+    
+    #Definimos función de guardado
+    def save(self, filename, other_par=None):
+        fib = getattr(self, "fib", None)
+        sim = getattr(self, "sim", None)
+        saver(self.W, self.T, sim, fib, filename, other_par)
 
 #%% Funciones para guardar y cargar datos
 
@@ -309,6 +313,30 @@ def saver(AW, AT, sim:Sim, fib:Fibra, filename, other_par = None):
             else:
                 for i in other_par:
                     f.write(f'{str(i)}\n')
+                    
+def saver2(data:Data, filename, other_par = None):
+    # Guardando los parametros de simulación y de la fibra en un diccionario.
+    metadata = {'Sim': data.sim.__dict__, 'Fibra': data.fib.__dict__} #sim.__dict__ = {'puntos'=N, 'Tmax'=70, ...}
+
+    # Guardando los datos en filename-data.txt con pickle para cargar después.
+    with open(f"{filename}-data.txt", 'wb') as f:
+        pickle.dump(data, f)
+        
+    # Guardar parametros filename-param.txt para leer directamente.
+    with open(f"{filename}-param.txt", 'w') as f:
+        f.write('-------------Parameters-------------\n')
+        f.write(f'{datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")}\n\n')
+        for class_name, class_attrs in metadata.items():
+            f.write(f'\n-{class_name}:\n\n')
+            for attr, value in class_attrs.items():
+                f.write(f'{attr} = {value}\n')
+        if other_par:
+            f.write("\n\n-Other Parameters:\n\n")
+            if isinstance(other_par, str):
+                f.write(f'{other_par}\n')
+            else:
+                for i in other_par:
+                    f.write(f'{str(i)}\n')
 
 # Cargando datos
 def loader(filename, resim = None):
@@ -320,6 +348,11 @@ def loader(filename, resim = None):
         return AW, AT, sim, fibra
     else:
         return AW, AT, metadata
+    
+def loader2(filename):
+    with open(f"{filename}-data.txt", 'rb') as f:
+        data = pickle.load(f)
+    return data
 
 # Cargando metadata en las clases
 # Devuelve objetos sim:Sim and fib:Fibra objects, ya cargados con los parámetros.
