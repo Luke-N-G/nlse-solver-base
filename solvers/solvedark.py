@@ -93,5 +93,8 @@ def Solve_dark(sim: Sim, fib: Fibra, pulso_0, window=0, z_locs=None, pbar=True):
         A_w[j,:] = A_w[j,:] * np.exp(D_w * zlocs[j])
     A_t = np.array([IFT(a_w) for a_w in A_w], dtype=complex)
 
-    return zlocs, A_w, A_t #Nos devuelve: zlocs = Posiciones donde calculamos la solución, A_w = Matriz con la evolución del espectro, A_t = Matriz con la evolución del pulso
+    return zlocs, A_w
 
+#zlocs: Puntos donde esta calculada la solución
+#A_w  : Matriz con la solución en el espectro [posición, frequencia]
+#A_t  : Matriz con la solución en tiempo [posición, tiempo], se puede obtener a través de IFT(A_w)

@@ -85,14 +85,6 @@ def Solve_barrierNLSE(sim: Sim, fib: Fibra, pulso_0, delta_beta1, TB, betab, z_l
             sol = solve_ivp(lambda z, B: dBdz(z, B, D_w, 2*np.pi*sim.freq, fib.gamma, heavi), [0, fib.L], y0 = espectro_0, rtol = rtol, atol = atol)
 
     
-# =============================================================================
-#     if z_locs: #Si le damos número a zlocs, armamos un array con esa cantidad de puntos, donde guardamos la solución en dicho paso
-#         t_eval = np.linspace(0,fib.L,z_locs)
-#         sol = solve_ivp(f_B, [0, fib.L], y0 = espectro_0, rtol = rtol, atol = atol, t_eval=t_eval)
-#     else:
-#         sol = solve_ivp(f_B, [0, fib.L], y0 = espectro_0, rtol = rtol, atol = atol)
-# =============================================================================
-
     zlocs = sol["t"]  #Puntos de z donde tenemos B(w,z)
     ysol  = sol["y"]  #Array, en cada elemento se tiene un subarray [B(w0,z0), B(w0,z1), ..., B(w0,zf)]
     print(sol["message"])
@@ -106,4 +98,8 @@ def Solve_barrierNLSE(sim: Sim, fib: Fibra, pulso_0, delta_beta1, TB, betab, z_l
         A_w[j,:] = A_w[j,:] * np.exp(D_w * zlocs[j])
     A_t = np.array([IFT(a_w) for a_w in A_w], dtype=complex)
 
-    return zlocs, A_w, A_t, ysol #Nos devuelve: zlocs = Posiciones donde calculamos la solución, A_w = Matriz con la evolución del espectro, A_t = Matriz con la evolución del pulso
+    return zlocs, A_w
+
+#zlocs: Puntos donde esta calculada la solución
+#A_w  : Matriz con la solución en el espectro [posición, frequencia]
+#A_t  : Matriz con la solución en tiempo [posición, tiempo], se puede obtener a través de IFT(A_w)

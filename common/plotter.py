@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.colors import LogNorm
 import numpy as np
-from ..common.commonfunc import Pot, fftshift, Sim, Fibra, num_fotones, Adapt_Vector
+from ..common.commonfunc import Pot, fftshift, Sim, Fibra, Data, num_fotones, Adapt_Vector
 from scipy.interpolate import interp1d
 from scipy.interpolate import CubicSpline
 
@@ -22,7 +22,13 @@ Tlim, Wlim: Región donde graficar en tiempo y frecuencia (opcional). Unidades: 
 save:       Guardar imagen, el dpi se cambia manualmente (opcional)
 '''
 
-def plotinst(sim:Sim, fib:Fibra, AT, AW, Tlim=None, Wlim=None, Ylim=None, wavelength=False, zeros=None, save=None, dB=None, noshow=None, end=-1):
+def plotinst(data:Data, Tlim=None, Wlim=None, Ylim=None, wavelength=False, zeros=None, save=None, dB=None, noshow=None, end=-1):
+    
+    AT  = data.T
+    AW  = data.W
+    sim = data.sim
+    fib = data.fib
+    
     #Ploteamos el pulso y espectro inicial y final:
     fig, (ax1,ax2) = plt.subplots(1,2,figsize=(10,4))
     #----pulso----
@@ -94,10 +100,16 @@ def format_func(value, tick_number):
     return f'$10^{{{int(value/10)}}}$' 
 #----------------------------------------------------------------------------------------
 
-def plotcmap(sim:Sim, fib:Fibra, zlocs, AT, AW, wavelength=False, dB=False,
+def plotcmap(data:Data, wavelength=False, dB=False,
              vlims=[], cmap="turbo", Tlim=None, Wlim=None,
              zeros=False, save=None, noshow=False, plot_type="both"):
-
+    
+    zlocs = data.z
+    AT    = data.T
+    AW    = data.W
+    sim   = data.sim
+    fib   = data.fib
+    
     #Labels y tamaños
     cbar_tick_size = 7
     tick_size      = 10
@@ -222,7 +234,11 @@ cmap:          String, se elije el colormap. Por default es Turbo  (opcional)
 nowshow:       Boolean, si "True" no muestra el gráfico            (opcional)
 dpi:           Int, ajusta la resolución de la imagen final        (opcional)
 '''
-def plotspecgram(sim:Sim, fib:Fibra, AT, Tlim=None, Wlim=None, end=-1, save=None, dB=None, zeros=None, cmap="turbo", noshow=None, dpi=800):
+def plotspecgram(data:Data, Tlim=None, Wlim=None, end=-1, save=None, dB=None, zeros=None, cmap="turbo", noshow=None, dpi=800):
+    
+    AT  = data.T
+    sim = data.sim
+    fib = data.fib
     
     AT = AT[end,:]
     
@@ -267,7 +283,11 @@ def plotspecgram(sim:Sim, fib:Fibra, AT, Tlim=None, Wlim=None, end=-1, save=None
         plt.show()
         
         
-def plotspecgram2(sim:Sim, fib:Fibra, AT, Tlim=None, Wlim=None, end=-1, save=None, dB=None, zeros=None, cmap="turbo", noshow=None, dpi=800):
+def plotspecgram2(data:Data, Tlim=None, Wlim=None, end=-1, save=None, dB=None, zeros=None, cmap="turbo", noshow=None, dpi=800):
+    
+    AT  = data.T
+    sim = data.sim
+    fib = data.fib
     
     AT = AT[end,:]
     
