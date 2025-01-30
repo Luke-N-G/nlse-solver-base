@@ -120,6 +120,10 @@ class Sim:
         self.dW     = np.pi/Tmax
         self.freq   = fftshift( np.pi * np.arange(-puntos/2,puntos/2) / Tmax )/(2*np.pi)
         
+        @property
+        def sfreq(self):
+            return fftshift(self.freq)
+        
 #Fibra: Guarda los parámetros de la fibra, más algunos métodos útiles.
 class Fibra:
     def __init__(self, L, beta2, beta3, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, betas=0 ):
