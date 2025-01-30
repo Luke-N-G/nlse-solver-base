@@ -266,8 +266,8 @@ class Fibra2:
 
 #Data: Guarda los resultados de la simulación
 class Data:
-    def __init__(self, solve_function, *args, **kwargs):
-        self.z, self.W = solve_function(*args, **kwargs)
+    def __init__(self, solve_function, sim, fibra, **kwargs):
+        self.z, self.W = solve_function(sim, fibra, **kwargs)
         self.fib = kwargs.get("fibra")
         self.sim = kwargs.get("sim")
     
