@@ -285,7 +285,7 @@ class Data:
     def save(self, filename, other_par=None):
         fib = getattr(self, "fib", None)
         sim = getattr(self, "sim", None)
-        saver(self.W, self.T, sim, fib, filename, other_par)
+        saver2(self.W, self.T, sim, fib, filename, other_par)
 
 #%% Funciones para guardar y cargar datos
 
