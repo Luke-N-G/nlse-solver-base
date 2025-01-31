@@ -38,13 +38,13 @@ class Pulses:
     def __init__(self):
         pass
     #Super gaussiana
-    def Sgaussian(t, amplitude, width, offset, chirp, order):
+    def Sgaussian(self, t, amplitude, width, offset, chirp, order):
         return np.sqrt(amplitude)*np.exp(- (1+1j*chirp)/2*((t-offset)/(width))**(2*np.floor(order)))*(1+0j)
     #Solitones
-    def soliton(t, width, beta2, gamma, order):
+    def soliton(self, t, width, beta2, gamma, order):
         return order * np.sqrt( np.abs(beta2)/(gamma * width**2) ) * (1/np.cosh(t/width))
     #Para colisión de pulsos
-    def twopulse(t, amp1, amp2, width1, width2, offset1, offset2, dfreq):
+    def twopulse(self, t, amp1, amp2, width1, width2, offset1, offset2, dfreq):
         np.seterr(over='ignore') #Silenciamos avisos de overflow (1/inf == 0 para estos casos)
         pump   = np.sqrt(amp1)*(1/np.cosh(t/width1))
         signal = np.sqrt(amp2)*(1/np.cosh((t + offset2)/width2))*np.exp(-2j*np.pi*dfreq*t)
