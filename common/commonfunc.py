@@ -34,71 +34,65 @@ def IFT(espectro):
 def t_a_freq(t_o_freq):
     return fftfreq( len(t_o_freq) , d = t_o_freq[1] - t_o_freq[0])
 
-#Defino función para una super gaussiana
-def SuperGauss(t,amplitud,ancho,offset,chirp,orden):
-    return np.sqrt(amplitud)*np.exp(- (1+1j*chirp)/2*((t-offset)/(ancho))**(2*np.floor(orden)))*(1+0j)
+class Pulses:
+    def __init__(self):
+        pass
+    #Super gaussiana
+    def Sgaussian(t, amplitude, width, offset, chirp, order):
+        return np.sqrt(amplitude)*np.exp(- (1+1j*chirp)/2*((t-offset)/(width))**(2*np.floor(order)))*(1+0j)
+    #Solitones
+    def soliton(t, width, beta2, gamma, order):
+        return order * np.sqrt( np.abs(beta2)/(gamma * width**2) ) * (1/np.cosh(t/width))
+    #Para colisión de pulsos
+    def twopulse(t, amp1, amp2, width1, width2, offset1, offset2, dfreq):
+        np.seterr(over='ignore') #Silenciamos avisos de overflow (1/inf == 0 para estos casos)
+        pump   = np.sqrt(amp1)*(1/np.cosh(t/width1))
+        signal = np.sqrt(amp2)*(1/np.cosh((t + offset2)/width2))*np.exp(-2j*np.pi*dfreq*t)
+        np.seterr(over='warn')   #Reactivamos avisos de overflow
+        return pump + signal
+    #Orden N de un pulso
+    def order(beta2, gamma, width, power):
+        return np.sqrt( gamma * power * width**2 / np.abs(beta2)  )
 
-#Solitón con función Sech
-def Soliton(t, ancho, b2, gamma, orden):
-    return orden * np.sqrt( np.abs(b2)/(gamma * ancho**2) ) * (1/ np.cosh(t / ancho) )
-
-#Esquema para colisión de pulsos
-# pulse = "s", solo signal, "p" solo pump, "sp" ambos.
-def Two_Pulse(T, amp1, amp2, ancho1, ancho2, offset1, offset2, nu, pulses):
-    t_1 = T/ancho1
-    t_2 = T/ancho2
+class Tools:
+    def __init__(self):
+        pass
     
-    np.seterr(over='ignore') #Silenciamos avisos de overflow (1/inf = 0 para estos casos)
+    def pot(signal):
+        return np.abs(signal)**2
     
-    pump   = np.sqrt(amp1)*(1/np.cosh(t_1))
-    signal = np.sqrt(amp2)*(1/np.cosh(t_2 + offset2/ancho2))*np.exp(-2j*np.pi*nu*T)
+    def energy(self, t_or_freq, signal):
+        return np.trapz( self.pot(signal), t_or_freq )
     
-    np.seterr(over='warn') #Reactivamos avisos de overflow.
+    def photons(self, freq, spectrum, omega0):
+        return np.sum( np.abs(spectrum)**2 / (freq + omega0) )
+    
+    def find_chirp(t, signal):
+        phase = np.unwrap( np.angle(signal) ) #Angle busca la fase, Unwrap la extiende de [0,2pi) a todos los reales.
+        #fase = fase - fase[ int(len(fase)/2)  ] #Centramos el array
+        df = np.diff( phase, prepend = phase[0] - (phase[1]  - phase[0]  ), axis=0)
+        dt = np.diff( t, prepend = t[0]- (t[1] - t[0] ), axis=0 )
+        chirp = -df/dt
+        return chirp
+    
+    def find_shift(self, zlocs, freq, A_wr):
+        peaks = np.zeros( len(zlocs), dtype=int )
+        dw    = np.copy(peaks)
+        for index_z in range( len(zlocs) ):
+            peaks[index_z] = np.argmax( self.pot( fftshift(A_wr[index_z]) ) )
+            #dw[index_z] = fftshift(2*np.pi*sim_r.freq)[peaks[index_z]]
+        dw = fftshift(2*np.pi*freq)[peaks]
+        return dw
 
-    pulse_dict = {"s": signal, "p": pump, "sp": pump + signal}
-    if pulses not in pulse_dict:
-        raise ValueError(f"Tipo de pulso no valido: {pulses}. Los tipos son: 's', 'p', 'sp'.")
-
-    return pulse_dict.get(pulses)
-
-#Función que calcula la potencia
-def Pot(pulso): 
-    return np.abs(pulso)**2
-
-#Función energía
-def Energia(t_o_freq, señal):
-    return np.trapz(Pot(señal), t_o_freq)
-
-#Función numero de fotones
-def num_fotones(freq, espectro, w0):
-    return np.sum( np.abs(espectro)**2 / (freq + w0)  )
-
-def find_chirp(t, señal):
-    fase = np.unwrap( np.angle(señal) ) #Angle busca la fase, Unwrap la extiende de [0,2pi) a todos los reales.
-    #fase = fase - fase[ int(len(fase)/2)  ] #Centramos el array
-    df = np.diff( fase, prepend = fase[0] - (fase[1]  - fase[0]  ),axis=0)
-    dt = np.diff( t, prepend = t[0]- (t[1] - t[0] ),axis=0 )
-    chirp = -df/dt
-    return chirp
-
-def find_shift(zlocs, freq, A_wr):
-    peaks = np.zeros( len(zlocs), dtype=int )
-    dw    = np.copy(peaks)
-    for index_z in range( len(zlocs) ):
-        peaks[index_z] = np.argmax( Pot( fftshift(A_wr[index_z]) ) )
-        #dw[index_z] = fftshift(2*np.pi*sim_r.freq)[peaks[index_z]]
-    dw = fftshift(2*np.pi*freq)[peaks]
-    return dw
-
-def find_k(Aw, dz, rel_thr=1e-6):
-    Aw = Aw.T  
-    ks    = np.zeros_like(Aw, dtype='float64')
-    phis  = np.zeros_like(ks,  dtype='float64')
-    mask = abs(Aw)>rel_thr*np.max(np.abs(Aw))
-    phis[mask] = np.unwrap( np.angle(Aw[mask]), axis=0 )
-    ks = np.diff(phis)/dz
-    ks[np.diff(mask) != 0] = 0
-    return ks, phis
+    def find_k(Aw, dz, rel_thr=1e-6):
+        Aw = Aw.T  
+        ks    = np.zeros_like(Aw, dtype='float64')
+        phis  = np.zeros_like(ks,  dtype='float64')
+        mask = abs(Aw)>rel_thr*np.max(np.abs(Aw))
+        phis[mask] = np.unwrap( np.angle(Aw[mask]), axis=0 )
+        ks = np.diff(phis)/dz
+        ks[np.diff(mask) != 0] = 0
+        return ks, phis
 
 
 def Adapt_Vector(freq, omega0, Aw):

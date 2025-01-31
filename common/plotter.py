@@ -9,10 +9,9 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.colors import LogNorm
 import numpy as np
-from ..common.commonfunc import Pot, fftshift, Sim, Fibra, Data, num_fotones, Adapt_Vector
 from scipy.interpolate import interp1d
 from scipy.interpolate import CubicSpline
-
+from ..common.commonfunc import Tools, fftshift, Sim, Fibra, Data, Adapt_Vector
 
 ''' PLOTINST
 plotinst: Función que grafica el pulso y espectro inicial y final
@@ -24,6 +23,8 @@ save:       Guardar imagen, el dpi se cambia manualmente (opcional)
 
 def plotinst(data:Data, Tlim=None, Wlim=None, Ylim=None, wavelength=False, zeros=None, save=None, dB=None, noshow=None, end=-1):
     
+    tls = Tools()
+    
     AT  = data.T
     AW  = data.W
     sim = data.sim
@@ -32,9 +33,9 @@ def plotinst(data:Data, Tlim=None, Wlim=None, Ylim=None, wavelength=False, zeros
     #Ploteamos el pulso y espectro inicial y final:
     fig, (ax1,ax2) = plt.subplots(1,2,figsize=(10,4))
     #----pulso----
-    ax1.plot( sim.tiempo, Pot(AT[0]), label="Inicial" )
+    ax1.plot( sim.tiempo, tls.pot(AT[0]), label="Inicial" )
     end = int(end)
-    ax1.plot( sim.tiempo, Pot(AT[end]), label="Final" )
+    ax1.plot( sim.tiempo, tls.pot(AT[end]), label="Final" )
     if Tlim:
         ax1.set_xlim(Tlim)
     ax1.set_title("Tiempo")
@@ -45,14 +46,14 @@ def plotinst(data:Data, Tlim=None, Wlim=None, Ylim=None, wavelength=False, zeros
     if wavelength:
         lambda_vec, Alam = Adapt_Vector(sim.freq, fib.omega0, AW)
         x = lambda_vec
-        y_1 = Pot(Alam[0])
-        y_2 = Pot(Alam[end])
+        y_1 = tls.pot(Alam[0])
+        y_2 = tls.pot(Alam[end])
     else:
         ax2.set_title("Espectro")
         ax2.set_xlabel("Frecuencia (THz)")
         x = fftshift( sim.freq  )
-        y_1 = Pot( fftshift(AW[0])  )
-        y_2 = Pot( fftshift(AW[end]) )
+        y_1 = tls.pot( fftshift(AW[0])  )
+        y_2 = tls.pot( fftshift(AW[end]) )
     ax2.plot( x, y_1, label="Inicial")
     ax2.plot( x, y_2 , label="Final")
     if Wlim:
@@ -104,6 +105,8 @@ def plotcmap(data:Data, wavelength=False, dB=False,
              vlims=[], cmap="turbo", Tlim=None, Wlim=None,
              zeros=False, save=None, noshow=False, plot_type="both"):
     
+    tls = Tools()
+    
     zlocs = data.z
     AT    = data.T
     AW    = data.W
@@ -117,7 +120,7 @@ def plotcmap(data:Data, wavelength=False, dB=False,
     M_label_size   = 15
     
     #Vectores de potencia, y listas "extent" para pasarle a imshow
-    P_T = Pot(AT)
+    P_T = tls.pot(AT)
     textent = [sim.tiempo[0], sim.tiempo[-1], zlocs[0], zlocs[-1]]
     
     #Aplicamos el fftshift al espectro, o transformamos a longitud de onda de requerirlo
@@ -132,11 +135,11 @@ def plotcmap(data:Data, wavelength=False, dB=False,
         for i in range(AL.shape[0]):
             interp_func = interp1d(lamvec, AL[i, :], kind='next')
             AW[i, :] = interp_func(lamvec_lin)
-        P_W = Pot(AW)
+        P_W = tls.pot(AW)
         wextent = [lamvec_lin[0], lamvec_lin[-1], zlocs[0], zlocs[-1]]
     else:
         AW = fftshift(AW, axes=1)
-        P_W = Pot(AW)
+        P_W = tls.pot(AW)
         wextent = [fftshift(sim.freq)[0], fftshift(sim.freq)[-1], zlocs[0], zlocs[-1]]
     
     #Escala dBI
@@ -364,12 +367,14 @@ def plotenergia(sim:Sim, zlocs, AT, AW, save=None):
     
 def plotfotones(sim:Sim, zlocs, AW, lambda0 = 1550, save=None):
     
+    tls = Tools()
+    
     c = 299792458 # Velocidad de la luz en m/s
     omega0 = 2 * np.pi * c / (lambda0*1e-9) #Definimos la frecuencia central, pasando lamba0 a m    
 
     fotones = np.zeros( len(zlocs) )
     for i in range(len(fotones)):
-        fotones[i] = num_fotones(sim.freq, AW[i], w0=omega0)
+        fotones[i] = tls.photons(sim.freq, AW[i], w0=omega0)
     plt.plot(zlocs, fotones)
     plt.title("Fotones")
     plt.ylabel("N")
