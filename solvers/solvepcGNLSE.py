@@ -5,12 +5,14 @@ Created on Fri Aug 11 11:00:09 2023
 @author: d/dt Lucas
 """
 
-from ..common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra
+from ..common.commonfunc import FT, IFT, fftshift, Tools, Sim, Fibra
 import numpy as np
 from scipy.integrate import solve_ivp  #Para resolver eq. diferenciales ordinarias
 from functools import partial          #Permite evaluar parcialmente una función g(x,y) = partial(f(x,y,z), z = 2)
 from time import time
 from tqdm import tqdm
+
+tls = Tools()
 
 '''Función dB/dz = f(B,z)
 Requiere: z y B libres, operador lineal D, frecuencia w, gamma y TR'''
@@ -22,7 +24,7 @@ def dBdz(z, B, D, w, gammaw_eff, gammaw_eff_c, r, r_c, hR_W, fR): #Todo lo que e
     C_t = IFT(C_w)  
     
     op_nolin = 1j * gammaw_eff * FT( np.conj(C_t) * B_t**2  ) + 1j * gammaw_eff_c * FT( C_t**2 * np.conj(B_t) ) + \
-        1j * gammaw_eff_c *2* fR * FT( B_t * IFT( hR_W  * FT( Pot(B_t) ) ) - B_t * Pot(B_t)  )
+        1j * gammaw_eff_c *2* fR * FT( B_t * IFT( hR_W  * FT( tls.pot(B_t) ) ) - B_t * tls.pot(B_t)  )
     op_nolin = np.array(op_nolin)
     
     return np.exp(-D*z) * op_nolin
