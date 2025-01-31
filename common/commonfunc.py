@@ -58,7 +58,7 @@ class Tools:
     def __init__(self):
         pass
     
-    def pot(signal):
+    def pot(self, signal):
         return np.abs(signal)**2
     
     def energy(self, t_or_freq, signal):
@@ -84,7 +84,7 @@ class Tools:
         dw = fftshift(2*np.pi*freq)[peaks]
         return dw
 
-    def find_k(Aw, dz, rel_thr=1e-6):
+    def find_k(self, Aw, dz, rel_thr=1e-6):
         Aw = Aw.T  
         ks    = np.zeros_like(Aw, dtype='float64')
         phis  = np.zeros_like(ks,  dtype='float64')
