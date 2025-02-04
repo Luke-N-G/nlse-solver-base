@@ -240,6 +240,18 @@ class Fibra:
         if wavelength:
             w = self.lambda_to_omega(w)
         return self.gamma + self.gamma1 * w
+    
+    # Método para calcular beta1 en función de omega
+    def beta1_w(self, w, wavelength=False):
+        if wavelength:
+            w = self.lambda_to_omega(w)
+        if self.betas != 0:
+            beta1 = 0
+            for i, beta in enumerate(self.betas):
+                beta1 += beta * w ** (i+1) / np.math.factorial(i+1)
+        else:
+            beta1 = self.beta2 * w + self.beta3 * w**2
+        return beta1
 
     # Método para calcular beta2 en función de omega
     def beta2_w(self, w, wavelength=False):
