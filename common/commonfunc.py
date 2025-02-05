@@ -316,7 +316,8 @@ def disp_op(sim:Sim, fib:Fibra):
         D_w = 0
         for i in range(len(fib.betas)):
             D_w = D_w + 1j*fib.betas[i]/np.math.factorial(i+2) * sim.omega**(i+2)
-            
+    
+    #Si beta1 != 0, luego agregamos el término correspondiente al operador dispersión
     if fib.beta1:
         D_w = D_w + 1j*fib.beta1*sim.omega
         
