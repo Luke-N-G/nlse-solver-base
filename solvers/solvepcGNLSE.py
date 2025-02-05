@@ -67,6 +67,7 @@ def Solve_pcGNLSE(sim: Sim, fib: Fibra, pulso_0, z_locs=None, tau1=12.2e-3, pbar
         D_w = np.array(D_w)
     
     D_w = disp_op(sim, fib)
+    print("Hola")
     
     #Calculamos parámetros preliminares de la pcNLSE
     gammaw = fib.gamma + fib.gamma1 * (2*np.pi*sim.freq) #gamma(w), se podría extender
