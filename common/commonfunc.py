@@ -42,21 +42,7 @@ def Adapt_Vector(freq, omega0, Aw):
     Alam = Aw[:, sort_indices]
     return lambda_vec_ordered, Alam
 
-def disp_op(sim:Sim, fib:Fibra):
-           
-    #Si solo damos valores de beta2 y/o beta3
-    D_W = 1j * fib.beta2/2 * sim.omega**2 + 1j * fib.beta3/6 * sim.omega**3 - fib.alpha/2
-    
-    #Si pasamos un vector de betas, reescribimos el operador a la versión más general
-    if fib.betas:
-        D_w = 0
-        for i in range(len(fib.betas)):
-            D_w = D_w + 1j*fib.betas[i]/np.math.factorial(i+2) * sim.omega**(i+2)
-            
-    if fib.beta1:
-        D_w = D_w + 1j*fib.beta1*sim.omega
-        
-    return D_w
+
 
 
 #%%-------------CLASES---------------------
@@ -320,6 +306,23 @@ class Data:
         fib = getattr(self, "fib", None)
         sim = getattr(self, "sim", None)
         saver(self, filename, other_par)
+
+#Additional
+def disp_op(sim:Sim, fib:Fibra):
+           
+    #Si solo damos valores de beta2 y/o beta3
+    D_W = 1j * fib.beta2/2 * sim.omega**2 + 1j * fib.beta3/6 * sim.omega**3 - fib.alpha/2
+    
+    #Si pasamos un vector de betas, reescribimos el operador a la versión más general
+    if fib.betas:
+        D_w = 0
+        for i in range(len(fib.betas)):
+            D_w = D_w + 1j*fib.betas[i]/np.math.factorial(i+2) * sim.omega**(i+2)
+            
+    if fib.beta1:
+        D_w = D_w + 1j*fib.beta1*sim.omega
+        
+    return D_w
 
 #%% Funciones para guardar y cargar datos
 
