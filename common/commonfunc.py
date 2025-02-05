@@ -186,9 +186,7 @@ class Fibra:
         self.fR = fR  # fR de la fibra, para calcular Raman (y self-steepening)
         self.lambda0 = lambda0  # Longitud de onda central
         self.omega0 = 2 * np.pi * 299792458 * (1e9) / (1e12) / lambda0  # Frecuencia (angular) central
-
-        if beta1:
-            self.beta1 = beta1
+        self.beta1 = beta1 #Parámetro de velocidad de grupo, opcional
 
         if betas is not None:
             self.betas = betas
