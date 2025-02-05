@@ -256,6 +256,8 @@ class Fibra:
                 beta1 += beta * w ** (i+1) / np.math.factorial(i+1)
         else:
             beta1 = self.beta2 * w + self.beta3 * w**2
+        if self.beta1 != 0:
+            beta1 = beta1 + self.beta1 * w
         return beta1
 
     # Método para calcular beta2 en función de omega
