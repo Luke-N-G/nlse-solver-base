@@ -34,6 +34,33 @@ def IFT(espectro):
 def t_a_freq(t_o_freq):
     return fftfreq( len(t_o_freq) , d = t_o_freq[1] - t_o_freq[0])
 
+
+def Adapt_Vector(freq, omega0, Aw):
+    lambda_vec = 299792458 * (1e9)/(1e12) / (freq + omega0/(2*np.pi))
+    sort_indices = lambda_vec.argsort()
+    lambda_vec_ordered = lambda_vec[sort_indices]
+    Alam = Aw[:, sort_indices]
+    return lambda_vec_ordered, Alam
+
+def disp_op(sim:Sim, fib:Fibra):
+           
+    #Si solo damos valores de beta2 y/o beta3
+    D_W = 1j * fib.beta2/2 * sim.omega**2 + 1j * fib.beta3/6 * sim.omega**3 - fib.alpha/2
+    
+    #Si pasamos un vector de betas, reescribimos el operador a la versión más general
+    if fib.betas:
+        D_w = 0
+        for i in range(len(fib.betas)):
+            D_w = D_w + 1j*fib.betas[i]/np.math.factorial(i+2) * sim.omega**(i+2)
+            
+    if fib.beta1:
+        D_w = D_w + 1j*fib.beta1*sim.omega
+        
+    return D_w
+
+
+#%%-------------CLASES---------------------
+
 class Pulses:
     def __init__(self):
         pass
@@ -95,14 +122,6 @@ class Tools:
         return ks, phis
 
 
-def Adapt_Vector(freq, omega0, Aw):
-    lambda_vec = 299792458 * (1e9)/(1e12) / (freq + omega0/(2*np.pi))
-    sort_indices = lambda_vec.argsort()
-    lambda_vec_ordered = lambda_vec[sort_indices]
-    Alam = Aw[:, sort_indices]
-    return lambda_vec_ordered, Alam
-
-
 class Units:
     def __init__(self):
         
@@ -145,7 +164,6 @@ class Units:
 
         return conversion_factor
 
-#%%-------------CLASES---------------------
 
 #Sim: Guarda los parámetros de simulación
 class Sim:
@@ -173,7 +191,7 @@ class Sim:
         
 #Fibra: Guarda los parámetros de la fibra, más algunos métodos útiles.
 class Fibra:
-    def __init__(self, L, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, beta2=0, beta3=0, betas=None):
+    def __init__(self, L, gamma, gamma1, alpha, lambda0, TR=3e-3, fR=0.18, beta1=0, beta2=0, beta3=0, betas=None):
         self.L = L  # Longitud de la fibra
         self.gamma = gamma  # gamma de la fibra, para calcular SPM
         self.gamma1 = gamma1  # gamma1 de la fibra, para self-steepening
@@ -182,6 +200,9 @@ class Fibra:
         self.fR = fR  # fR de la fibra, para calcular Raman (y self-steepening)
         self.lambda0 = lambda0  # Longitud de onda central
         self.omega0 = 2 * np.pi * 299792458 * (1e9) / (1e12) / lambda0  # Frecuencia (angular) central
+
+        if beta1:
+            self.beta1 = beta1
 
         if betas is not None:
             self.betas = betas
