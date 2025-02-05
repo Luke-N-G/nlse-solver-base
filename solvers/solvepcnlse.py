@@ -5,7 +5,7 @@ Created on Fri Aug 11 11:00:09 2023
 @author: d/dt Lucas
 """
 
-from ..common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra
+from ..common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra, disp_op
 import numpy as np
 from scipy.integrate import solve_ivp  #Para resolver eq. diferenciales ordinarias
 from functools import partial          #Permite evaluar parcialmente una función g(x,y) = partial(f(x,y,z), z = 2)
@@ -33,14 +33,7 @@ def Solve_pcNLSE(sim: Sim, fib: Fibra, pulso_0, z_locs=None):
     espectro_0 = FT(pulso_0)
 
     #Calculamos el operador lineal
-    D_w = 1j * fib.beta2/2 * (2*np.pi*sim.freq)**2 + 1j * fib.beta3/6 * (2*np.pi*sim.freq)**3 - fib.alpha/2
-    
-    if fib.betas:
-        D_w = 0
-        for i in range(len(fib.betas)):
-            D_w = D_w + 1j*fib.betas[i]/np.math.factorial(i+2) * (2*np.pi*sim.freq)**(i+2)
-        D_w = np.array(D_w)
-    
+    D_w = disp_op(sim, fib)    
     
     #Calculamos parámetros preliminares de la pcNLSE
     gammaw = fib.gamma + fib.gamma1 * (2*np.pi*sim.freq) #gamma(w), se podría extender

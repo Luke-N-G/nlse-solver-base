@@ -5,7 +5,7 @@ Created on Wed Nov  6 15:46:16 2024
 @author: d/dT Lucas
 """
 
-from ..common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra
+from ..common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra, disp_op
 import numpy as np
 from scipy.integrate import solve_ivp  #Para resolver eq. diferenciales ordinarias
 from functools import partial          #Permite evaluar parcialmente una función g(x,y) = partial(f(x,y,z), z = 2)
@@ -42,14 +42,7 @@ def Solve_dark(sim: Sim, fib: Fibra, pulso_0, window=0, z_locs=None, pbar=True):
     espectro_0 = FT(pulso_0)
 
     #Calculamos el operador lineal
-    D_w = 1j * fib.beta2/2 * (2*np.pi*sim.freq)**2 + 1j * fib.beta3/6 * (2*np.pi*sim.freq)**3 - fib.alpha/2
-    D_w = np.array(D_w)
-    
-    if fib.betas:
-        D_w = 0
-        for i in range(len(fib.betas)):
-            D_w = D_w + 1j*fib.betas[i]/np.math.factorial(i+2) * (2*np.pi*sim.freq)**(i+2)
-        D_w = np.array(D_w)
+    D_w = disp_op(sim, fib)
     
     #Introducimos todos los parametros en la función, quedando f(z, B) = dB/dz
     f_B = partial(dBdz, D = D_w, w = 2*np.pi*sim.freq, gamma=fib.gamma, window=window)
