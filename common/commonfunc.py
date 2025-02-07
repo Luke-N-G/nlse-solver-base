@@ -71,14 +71,25 @@ class Tools:
     def __init__(self):
         pass
     
+    #Potencia, |A|^2
     def pot(self, signal):
         return np.abs(signal)**2
     
+    #Energía de la señal
     def energy(self, t_or_freq, signal):
         return np.trapz( self.pot(signal), t_or_freq )
     
+    #Número de fotones de la señal
     def photons(self, freq, spectrum, omega0):
         return np.sum( np.abs(spectrum)**2 / (freq + omega0) )
+    
+    #Orden de un pulso
+    def order(self, beta2, gamma, Po, To):
+       return np.sqrt( gamma * Po * To**2 / np.abs(beta2)  )
+   
+    #Potencia pico de un solitón fundamental, dado su ancho y parámetros
+    def sol_p0(self, beta2, gamma, To):
+        return np.abs(beta2)/(gamma * To**2)
     
     def find_chirp(t, signal):
         phase = np.unwrap( np.angle(signal) ) #Angle busca la fase, Unwrap la extiende de [0,2pi) a todos los reales.
