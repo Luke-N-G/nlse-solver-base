@@ -5,19 +5,21 @@ Created on Fri Jun 30 10:39:28 2023
 @author: d/dt Lucas
 """
 
-from ..common.commonfunc import FT, IFT, fftshift, Pot, Sim, Fibra, disp_op
+from ..common.commonfunc import FT, IFT, fftshift, Tools, Sim, Fibra, disp_op
 import numpy as np
 from scipy.integrate import solve_ivp  #Para resolver eq. diferenciales ordinarias
 from functools import partial          #Permite evaluar parcialmente una función g(x,y) = partial(f(x,y,z), z = 2)
 from tqdm import tqdm
 
 
+tls = Tools()
+
 '''Función dB/dz = f(B,z)
 Requiere: z y B libres, operador lineal D, frecuencia w, gamma y TR'''
 def dBdz(z,B,D,w,gamma,TR): #Todo lo que esta del lado derecho de dB/dz = ..., en el espacio de frecuencias.
     A_w = B * np.exp(D*z)
     A_t = IFT( A_w )
-    op_nolin = FT( 1j*gamma*Pot(A_t)*A_t - 1j*gamma*TR*IFT( -1j*w*FT(Pot(A_t)) )*A_t)
+    op_nolin = FT( 1j*gamma*tls.pot(A_t)*A_t - 1j*gamma*TR*IFT( -1j*w*FT(tls.pot(A_t)) )*A_t)
     return np.exp(-D*z) * op_nolin
 
 def dBdz_raman(z,B,D,w,gamma,gamma1,RW): #RW es la respuesta Raman en frecuencia (lo que calcula la función Raman(T))
