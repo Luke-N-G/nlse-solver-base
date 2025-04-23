@@ -109,7 +109,7 @@ def SolveNLS_cu(sim: Sim, fib: Fibra, pulso_0, raman=False, z_locs=None, pbar=Tr
                     pbar.update(abs(z - dBdz_with_progress.prev_z))
                     dBdz_with_progress.prev_z = z
                     if cupy:
-                        return dBdz_raman(z, B, D = D_w, w = 2*np.pi*sim.freq, gamma = fib.gamma, gamma1 = fib.gamma1, RW = RW)
+                        return dBdz_raman_cupy(z, B, D = D_w, w = 2*np.pi*sim.freq, gamma = fib.gamma, gamma1 = fib.gamma1, RW = RW)
                     else:
                         return dBdz_raman(z, B, D = D_w, w = 2*np.pi*sim.freq, gamma = fib.gamma, gamma1 = fib.gamma1, RW = RW)
                 dBdz_with_progress.prev_z = 0
