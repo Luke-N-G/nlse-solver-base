@@ -49,7 +49,8 @@ raman:    Booleano, por defecto False. Si False, se usa aproximación de pulso a
 z_locs:   Int, opcional. En cuantos puntos de z (entre 0 y L) se requiere la solución. 
 pbar:     Booleano, por defecto True. Barra de progreso de la simulación.
 """
-def SolveNLS(sim: Sim, fib: Fibra, pulso_0, raman=False, z_locs=None, pbar=True):
+def SolveNLS(sim: Sim, fib: Fibra, pulso_0, raman=False, z_locs=None, pbar=True,
+             rtol = 1e-3, atol = 1e-6):
 
     #Calculamos el espectro inicial, es lo que vamos a evolucionar.
     espectro_0 = FT(pulso_0)
@@ -65,8 +66,8 @@ def SolveNLS(sim: Sim, fib: Fibra, pulso_0, raman=False, z_locs=None, pbar=True)
       f_B = partial(dBdz, D = D_w, w = 2*np.pi*sim.freq, gamma = fib.gamma, TR = fib.TR)
 
     #Tolerancias para integrar (Tolerancias estandar: rtol=1e-5, atol=1e-8)
-    rtol = 1e-3
-    atol = 1e-6
+    #rtol = 1e-3
+    #atol = 1e-6
 
     if pbar:  # Por si queremos la barra de progreso
         with tqdm(total=fib.L, unit="m") as pbar:

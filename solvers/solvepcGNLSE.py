@@ -50,7 +50,8 @@ z_locs:        Int, opcional. En cuantos puntos de z (entre 0 y L) se requiere l
 pbar:          Booleano, por defecto True. Barra de progreso de la simulación.
 """
 
-def Solve_pcGNLSE(sim: Sim, fib: Fibra, pulso_0, z_locs=None, tau1=12.2e-3, pbar=True):
+def Solve_pcGNLSE(sim: Sim, fib: Fibra, pulso_0, z_locs=None, tau1=12.2e-3, pbar=True,
+                  rtol = 1e-3, atol = 1e-6):
     
     #Calculamos el espectro inicial, es lo que vamos a evolucionar.
     espectro_0 = FT(pulso_0)
@@ -75,8 +76,8 @@ def Solve_pcGNLSE(sim: Sim, fib: Fibra, pulso_0, z_locs=None, tau1=12.2e-3, pbar
 
 
     #Tolerancias para integrar (Tolerancias estandar: rtol=1e-5, atol=1e-8)
-    rtol = 1e-3
-    atol = 1e-6
+    #rtol = 1e-3
+    #atol = 1e-6
 
     if pbar: #Por si queremos la barra de progreso
         with tqdm(total=fib.L, unit="m") as pbar:
