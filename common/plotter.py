@@ -21,7 +21,8 @@ Tlim, Wlim: Región donde graficar en tiempo y frecuencia (opcional). Unidades: 
 save:       Guardar imagen, el dpi se cambia manualmente (opcional)
 '''
 
-def plotinst(data:Data, Tlim=None, Wlim=None, Ylim=None, wavelength=False, zeros=None, save=None, dB=None, noshow=None, end=-1):
+def plotinst(data:Data, Tlim=None, Wlim=None, Plim=None, PSDlim=None,
+             wavelength=False, zeros=None, save=None, dB=None, noshow=None, end=-1):
     
     tls = Tools()
     
@@ -58,9 +59,10 @@ def plotinst(data:Data, Tlim=None, Wlim=None, Ylim=None, wavelength=False, zeros
     ax2.plot( x, y_2 , label="Final")
     if Wlim:
         ax2.set_xlim(Wlim)
-    if Ylim:
-        ax1.set_ylim(Ylim)
-        ax2.set_ylim(Ylim)
+    if Plim:
+        ax1.set_ylim(Plim)
+    if PSDlim:
+        ax2.set_ylim(PSDlim)
     if zeros:
         freq_zdw = (fib.omega0 - fib.w_zdw)/(2*np.pi)
         freq_znw = (fib.omega0 - fib.w_znw)/(2*np.pi)
