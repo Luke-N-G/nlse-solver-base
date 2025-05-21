@@ -43,3 +43,4 @@ Propagation of a fundamental soliton in a fiber with Raman scattering. The solit
 [3] J. Bonetti, N. Linale, A. D. Sánchez, S. M. Hernandez, P. I. Fierens, and D. F. Grosz, "Modified nonlinear Schrödinger equation for frequency-dependent nonlinear profiles of arbitrary sign," J. Opt. Soc. Am. B 36, 3139-3144 (2019)
 
 [4] J. Bonetti, N. Linale, A. D. Sánchez, S. M. Hernandez, P. I. Fierens, and D. F. Grosz, "Photon-conserving generalized nonlinear Schrödinger equation for frequency-dependent nonlinearities," J. Opt. Soc. Am. B 37, 445-450 (2020)
+
