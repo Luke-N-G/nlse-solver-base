@@ -5,38 +5,78 @@ Created on Fri Aug 11 11:00:09 2023
 @author: d/dt Lucas
 """
 
-from ..common.commonfunc import FT, IFT, fftshift, Tools, Sim, Fibra, disp_op
+try:
+    from ..common.commonfunc import FT, IFT, fftshift, Tools, Sim, Fibra, disp_op
+except ImportError:
+    from common.commonfunc import FT, IFT, fftshift, Tools, Sim, Fibra, disp_op
 import numpy as np
-from scipy.integrate import solve_ivp  #Para resolver eq. diferenciales ordinarias
-from functools import partial          #Permite evaluar parcialmente una función g(x,y) = partial(f(x,y,z), z = 2)
+from scipy.integrate import solve_ivp  #RK45 solver
+from functools import partial     
 from time import time
 from tqdm import tqdm
 
 tls = Tools()
 
-'''Función dB/dz = f(B,z)
-Requiere: z y B libres, operador lineal D, frecuencia w, gamma y TR'''
-def dBdz(z, B, D, w, gammaw_eff, gammaw_eff_c, r, r_c, hR_W, fR): #Todo lo que esta del lado derecho de dB/dz = ..., en el espacio de frecuencias.
-    A_w = B * np.exp(D*z)  #Convertimos de B(w) -> A(w)
-    B_w = r * A_w          #Cuidado con la notación! B es la envolvente, B_w y B_t son los términos de la pcGNLSE
+#Differential equation
+def dBdz(z, B, D, w, gammaw_eff, gammaw_eff_c, r, r_c, hR_W, fR):
+    """
+    Compute the derivative of B with respect to z (dB/dz) in the frequency domain.
+
+    This function calculates the right-hand side of the equation dB/dz = ..., 
+    considering linear and nonlinear effects in the frequency domain.
+
+    Parameters:
+        z (float): Propagation distance.
+        B (ndarray): Field in the frequency domain at the current step.
+        D (ndarray): Linear operator in the frequency domain.
+        w (ndarray): Angular frequency array.
+        gammaw_eff (float): Effective nonlinear coefficient for the primary term.
+        gammaw_eff_c (float): Conjugate of gammaw_eff
+        r (ndarray): r factor.
+        r_c (ndarray): Conjugate of r.
+        hR_W (ndarray): Raman response in the frequency domain.
+        fR (float): Fractional Raman contribution.
+
+    Returns:
+        ndarray: The derivative of B with respect to z in the frequency domain.
+    """
+    A_w = B * np.exp(D * z)  # Convert from B(w) -> A(w)
+    B_w = r * A_w            # Note: B is the envelope, B_w and B_t are terms of the pcGNLSE
     C_w = r_c * A_w
     B_t = IFT(B_w)
-    C_t = IFT(C_w)  
+    C_t = IFT(C_w)
     
-    op_nolin = 1j * gammaw_eff * FT( np.conj(C_t) * B_t**2  ) + 1j * gammaw_eff_c * FT( C_t**2 * np.conj(B_t) ) + \
-        1j * gammaw_eff_c *2* fR * FT( B_t * IFT( hR_W  * FT( tls.pot(B_t) ) ) - B_t * tls.pot(B_t)  )
+    op_nolin = 1j * gammaw_eff * FT(np.conj(C_t) * B_t**2) + \
+               1j * gammaw_eff_c * FT(C_t**2 * np.conj(B_t)) + \
+               1j * gammaw_eff_c * 2 * fR * FT(B_t * IFT(hR_W * FT(tls.pot(B_t))) - B_t * tls.pot(B_t))
     op_nolin = np.array(op_nolin)
     
-    return np.exp(-D*z) * op_nolin
+    return np.exp(-D * z) * op_nolin
 
-def Raman(T, tau1=12.2e-3, tau2=32e-3, fR=0.18): #Agrawal pag.38: t1 = 12.2s fs, t2 = 32 fs
-    hR = np.zeros( len(T) )
-    hR[T>=0] = (tau1**2+tau2**2)/(tau1*tau2**2) * np.exp(-T[T>=0]/tau2) * np.sin(T[T>=0]/tau1) #Definimos el hR(T)
-    hR[T<0]  = 0
-    
-    hR = fftshift(hR)  #Shifteamos para que la respuesta empiece al principio de la ventana temporal
-    hR = hR/np.sum(hR) #Normalizamos, tal que int(hR) = 1    
-    hR_W = FT(hR)      #Pasamos el hR_W a frecuencia
+#Raman response function
+def Raman(T, tau1=12.2e-3, tau2=32e-3, fR=0.18):
+    """
+    Compute the Raman response in the frequency domain.
+
+    This function calculates the Raman response based on the time-domain response hR(T),
+    as described in Agrawal's Nonlinear Fiber Optics (page 38).
+
+    Parameters:
+        T (ndarray): Time array.
+        tau1 (float): Raman parameter tau1 (default: 12.2 fs).
+        tau2 (float): Raman parameter tau2 (default: 32 fs).
+        fR (float): Fractional Raman contribution (default: 0.18).
+
+    Returns:
+        ndarray: Raman response in the frequency domain (hR_W).
+    """
+    hR = np.zeros(len(T))
+    hR[T >= 0] = (tau1**2 + tau2**2) / (tau1 * tau2**2) * np.exp(-T[T >= 0] / tau2) * np.sin(T[T >= 0] / tau1)  # Define hR(T)
+    hR[T < 0] = 0
+
+    hR = fftshift(hR)  # Shift to start at the beginning of the temporal window
+    hR = hR / np.sum(hR)  # Normalize such that int(hR) = 1
+    hR_W = FT(hR)  # Convert hR to the frequency domain
 
     return hR_W
 
@@ -50,77 +90,101 @@ z_locs:        Int, opcional. En cuantos puntos de z (entre 0 y L) se requiere l
 pbar:          Booleano, por defecto True. Barra de progreso de la simulación.
 """
 
+#Solver function for the photon conserving Generalized Nonlinear Schrödinger Equation (pcGNLSE)
 def Solve_pcGNLSE(sim: Sim, fib: Fibra, pulso_0, z_locs=None, tau1=12.2e-3, pbar=True,
-                  rtol = 1e-3, atol = 1e-6):
-    
-    #Calculamos el espectro inicial, es lo que vamos a evolucionar.
+                  rtol=1e-3, atol=1e-6):
+    """
+    Simulate the evolution of a pulse using the pcGNLSE (photon conserving Generalized Nonlinear Schrödinger Equation).
+
+    This function solves the pcGNLSE for a given input pulse, considering both linear
+    and nonlinear effects, including Raman response. It supports progress tracking
+    with a progress bar.
+
+    Parameters:
+        sim (Sim): Simulation parameters.
+        fib (Fibra): Fiber parameters.
+        pulso_0 (ndarray): Input pulse in the time domain.
+        z_locs (int, optional): Number of z points (between 0 and L) where the solution is required. Default is None.
+        tau1 (float, optional): Raman parameter tau1 (default: 12.2 fs).
+        pbar (bool, optional): If True, display a progress bar for the simulation. Default is True.
+        rtol (float, optional): Relative tolerance for the ODE solver. Default is 1e-3.
+        atol (float, optional): Absolute tolerance for the ODE solver. Default is 1e-6.
+
+    Returns:
+        tuple:
+            - zlocs (ndarray): Points where the solution is calculated.
+            - A_w (ndarray): Matrix with the solution in the frequency domain [position, frequency].
+
+    Notes:
+        - The solution in the time domain can be obtained using the inverse Fourier transform (IFT) of A_w.
+    """
+    # Calculate the initial spectrum, which will be evolved.
     espectro_0 = FT(pulso_0)
 
-    #Calculamos el operador lineal
+    # Calculate the linear operator.
     D_w = disp_op(sim, fib)
     
-    #Calculamos parámetros preliminares de la pcNLSE
-    gammaw = fib.gamma + fib.gamma1 * (2*np.pi*sim.freq) #gamma(w), se podría extender
-    gammaw = np.array(gammaw, dtype=np.complex128) #Pedimos que sea un array complejo, para que no se rompan las raices de más adelante.
-    gammaw_eff = (1/2)*( gammaw * (2*np.pi*sim.freq + fib.omega0)**3 )**(1/4)
+    # Calculate preliminary parameters for the pcGNLSE.
+    gammaw = fib.gamma + fib.gamma1 * (2 * np.pi * sim.freq)  # gamma(w), can be extended.
+    gammaw = np.array(gammaw, dtype=np.complex128)  # Ensure it's a complex array to avoid issues with roots.
+    gammaw_eff = (1 / 2) * (gammaw * (2 * np.pi * sim.freq + fib.omega0)**3)**(1 / 4)
     gammaw_eff_c = np.conj(gammaw_eff)
-    r = ( gammaw / (2*np.pi*sim.freq + fib.omega0) )**(1/4)
+    r = (gammaw / (2 * np.pi * sim.freq + fib.omega0))**(1 / 4)
     r_c = np.conj(r)
     
-    #Calculamos la respuesta Raman
-    hR_W = Raman(sim.tiempo, fR = fib.fR, tau1=tau1) 
-    
+    # Calculate the Raman response.
+    hR_W = Raman(sim.tiempo, fR=fib.fR, tau1=tau1) 
 
-    #Introducimos todos los parametros en la función, quedando f(z, B) = dB/dz
-    f_B = partial(dBdz, D = D_w, w = 2*np.pi*sim.freq, gammaw_eff = gammaw_eff, gammaw_eff_c = gammaw_eff_c, r = r, r_c = r_c, hR_W = hR_W, fR = fib.fR)
+    # Introduce all parameters into the function, resulting in f(z, B) = dB/dz.
+    f_B = partial(dBdz, D=D_w, w=2 * np.pi * sim.freq, gammaw_eff=gammaw_eff, 
+                  gammaw_eff_c=gammaw_eff_c, r=r, r_c=r_c, hR_W=hR_W, fR=fib.fR)
 
-
-    #Tolerancias para integrar (Tolerancias estandar: rtol=1e-5, atol=1e-8)
-    #rtol = 1e-3
-    #atol = 1e-6
-
-    if pbar: #Por si queremos la barra de progreso
+    # Integration tolerances (default values: rtol=1e-3, atol=1e-6).
+    if pbar:  # If progress bar is enabled.
         with tqdm(total=fib.L, unit="m") as pbar:
             def dBdz_with_progress(z, B):
+                """
+                Wrapper function to compute dB/dz and update the progress bar.
+
+                Parameters:
+                    z (float): Current propagation distance.
+                    B (ndarray): Current field in the frequency domain.
+
+                Returns:
+                    ndarray: Derivative of B with respect to z.
+                """
                 pbar.update(abs(z - dBdz_with_progress.prev_z))
                 dBdz_with_progress.prev_z = z
-                return dBdz(z, B, D_w, 2*np.pi*sim.freq, gammaw_eff, gammaw_eff_c, r, r_c, hR_W, fib.fR)
+                return dBdz(z, B, D_w, 2 * np.pi * sim.freq, gammaw_eff, gammaw_eff_c, r, r_c, hR_W, fib.fR)
             dBdz_with_progress.prev_z = 0
 
-            if z_locs:
-                t_eval = np.linspace(0,fib.L,z_locs)
-                sol = solve_ivp(dBdz_with_progress, [0, fib.L], y0 = espectro_0, rtol = rtol, atol = atol, t_eval=t_eval)
+            if z_locs:  # If z_locs is provided, the output array will have z_locs elements.
+                t_eval = np.linspace(0, fib.L, z_locs)
+                sol = solve_ivp(dBdz_with_progress, [0, fib.L], y0=espectro_0, rtol=rtol, atol=atol, t_eval=t_eval)
             else:
-                sol = solve_ivp(dBdz_with_progress, [0, fib.L], y0 = espectro_0, rtol = rtol, atol = atol)
+                sol = solve_ivp(dBdz_with_progress, [0, fib.L], y0=espectro_0, rtol=rtol, atol=atol)
                 
-    else: #Sin la barra de progreso
-        if z_locs:
-            t_eval = np.linspace(0,fib.L,z_locs)
-            #Llamamos a solve_ivp, nos definimos una función f(z,B) con el resto de los parametros ya evaluados
-            sol = solve_ivp(lambda z, B: dBdz(z, B, D_w, 2*np.pi*sim.freq, gammaw_eff,
-                            gammaw_eff_c, r, r_c, hR_W, fib.fR), 
-                            [0, fib.L], y0 = espectro_0, rtol = rtol, atol = atol, 
-                            t_eval=t_eval)
+    else:  # Without progress bar.
+        if z_locs:  # If z_locs is provided, the output array will have z_locs elements.
+            t_eval = np.linspace(0, fib.L, z_locs)
+            # Call solve_ivp, defining a lambda function f(z, B) with the remaining parameters already evaluated.
+            sol = solve_ivp(lambda z, B: dBdz(z, B, D_w, 2 * np.pi * sim.freq, gammaw_eff,
+                                              gammaw_eff_c, r, r_c, hR_W, fib.fR), 
+                            [0, fib.L], y0=espectro_0, rtol=rtol, atol=atol, t_eval=t_eval)
         else:
-            sol = solve_ivp(lambda z, B: dBdz(z, B, D_w, 2*np.pi*sim.freq, gammaw_eff,
-                            gammaw_eff_c, r, r_c, hR_W, fib.fR), 
-                            [0, fib.L], y0 = espectro_0, rtol = rtol, atol = atol)
+            sol = solve_ivp(lambda z, B: dBdz(z, B, D_w, 2 * np.pi * sim.freq, gammaw_eff,
+                                              gammaw_eff_c, r, r_c, hR_W, fib.fR), 
+                            [0, fib.L], y0=espectro_0, rtol=rtol, atol=atol)
 
-
-    zlocs = sol["t"]  #Puntos de z donde tenemos B(w,z)
-    ysol  = sol["y"]  #Array, en cada elemento se tiene un subarray [B(w0,z0), B(w0,z1), ..., B(w0,zf)]
+    zlocs = sol["t"]  # Points of z where B(w, z) is calculated.
+    ysol = sol["y"]  # Array, each element contains a subarray [B(w0, z0), B(w0, z1), ..., B(w0, zf)].
     print(sol["message"])
 
-
-    #Armamos arrays 2D A(W) y A(T)
-    ysol  = np.array(ysol)
+    # Build 2D arrays A(W) and A(T).
+    ysol = np.array(ysol)
     ysol_transposed = ysol.T
     A_w = ysol_transposed
-    for j in range( len(zlocs) ):
-        A_w[j,:] = A_w[j,:] * np.exp(D_w * zlocs[j])
+    for j in range(len(zlocs)):
+        A_w[j, :] = A_w[j, :] * np.exp(D_w * zlocs[j])
 
     return zlocs, A_w
-
-#zlocs: Puntos donde esta calculada la solución
-#A_w  : Matriz con la solución en el espectro [posición, frequencia]
-#A_t  : Matriz con la solución en tiempo [posición, tiempo], se puede obtener a través de IFT(A_w)
