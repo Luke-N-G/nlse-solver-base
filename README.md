@@ -32,7 +32,8 @@ The _run.py_ script includes the following example:
 
 Propagation of a fundamental soliton in a fiber with Raman scattering. The soliton is shown to suffer Raman-induced self frequency shift (RIFS), as seen in reference [2] 
 
-<img src="https://github.com/user-attachments/assets/becd58da-be87-4231-a3f4-ffb8480705c2" alt="test_output"/>
+![test_output](https://github.com/user-attachments/assets/e16be450-2e5f-44db-8661-2fe45edc7cce)
+
 
 ## References
 [1] S. Balac, A. Fernandez, F. Mahé, F. Méhats, and R. Texier-Picard, "The Interaction Picture method for solving the generalized nonlinear Schrödinger equation in optics," ESAIM Mathematical Modelling and Numerical Analysis 50(4), 945–964 (2015).
