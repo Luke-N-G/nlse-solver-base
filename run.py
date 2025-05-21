@@ -31,7 +31,7 @@ lambda0 = 1550                    #Central wavelength: nm
 omega0  = 2*np.pi*c/lambda0       #Central angular frequency (rad/ps)
 
 #FIBER PARAMETERS
-L     = 400                       #Lfib:   m
+L     = 1000                      #Lfib:   m
 b2    = -20e-3                    #Beta2:  ps^2/m
 b3    = 0                         #Beta3:  ps^3/m
 gam   = 1.4e-3                    #Gamma:  1/Wm

@@ -45,7 +45,7 @@ def dBdz(z, B, D, w, gammaw_eff, r, r_c):
 #Solver for the photon conversing Nonlinear Schrödinger Equation
 def Solve_pcNLSE(sim: Sim, fib: Fibra, pulso_0, z_locs=None):
     """
-    Simulate the evolution of a pulse using the pcNLSE (polarization-coupled Nonlinear Schrödinger Equation).
+    Simulate the evolution of a pulse using the pcNLSE (photon-conserving Nonlinear Schrödinger Equation).
 
     This function solves the pcNLSE for a given input pulse, considering both linear
     and nonlinear effects.
