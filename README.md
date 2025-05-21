@@ -32,6 +32,9 @@ Propagation of a fundamental soliton in a fiber with Raman scattering. The solit
 [1] Stéphane Balac, Arnaud Fernandez, Fabrice Mahé, Florian Méhats, Rozenn Texier-Picard. The Interaction Picture method for solving the generalized nonlinear Schrödinger equation in optics. ESAIM:
 Mathematical Modelling and Numerical Analysis, 2016, 50 (4), pp.945-964. ff10.1051/m2an/2015060ff.
 ffhal-00850518v4f
+
 [2] G. P. Agrawal, Nonlinear Fiber Optics (Academic, 2007).
+
 [3] J. Bonetti, N. Linale, A. D. Sánchez, S. M. Hernandez, P. I. Fierens, and D. F. Grosz, "Modified nonlinear Schrödinger equation for frequency-dependent nonlinear profiles of arbitrary sign," J. Opt. Soc. Am. B 36, 3139-3144 (2019)
+
 [4] J. Bonetti, N. Linale, A. D. Sánchez, S. M. Hernandez, P. I. Fierens, and D. F. Grosz, "Photon-conserving generalized nonlinear Schrödinger equation for frequency-dependent nonlinearities," J. Opt. Soc. Am. B 37, 445-450 (2020)
