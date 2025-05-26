@@ -471,7 +471,10 @@ class Fibra:
         #Find zero nonlinearity wavelength when gamma0 and gamma1 are given
         if self.gamma1 != 0:
             self.w_znw = -self.gamma / self.gamma1 + self.omega0
-            self.znw = 2 * np.pi * 299792458 * (1e9) / (1e12) / self.w_znw
+            try:
+                self.znw = 2 * np.pi * 299792458 * (1e9) / (1e12) / self.w_znw
+            except ZeroDivisionError:
+                self.znw = np.inf
         else:
             self.w_znw = None
             self.znw = None
