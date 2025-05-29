@@ -330,7 +330,8 @@ def plotspecgram(data:Data, Tlim=None, Wlim=None, end=-1, save=None, dB=None, ze
         plt.show()
         
         
-def plotspecgram2(data:Data, Tlim=None, Wlim=None, end=-1, save=None, dB=None, zeros=None, cmap="turbo", noshow=None, dpi=800):
+def plotspecgram2(data:Data, Tlim=None, Wlim=None, end=-1, save=None, dB=None,
+                  zeros=None, vlim=None, cmap="turbo", noshow=None, dpi=800):
     
     """
     Plot a spectrogram of the temporal evolution of the simulation data.
@@ -343,6 +344,7 @@ def plotspecgram2(data:Data, Tlim=None, Wlim=None, end=-1, save=None, dB=None, z
         save (str, optional): File path to save the plot. Default is None.
         dB (bool, optional): If True, use logarithmic scale for the spectrogram. Default is None.
         zeros (bool, optional): If True, mark zero-dispersion and zero-nonlinearity points. Default is None.
+        vlim (list, optional): Sets the limits for the colorbar. Default is None.
         cmap (str, optional): Colormap to use for the spectrogram. Default is "turbo".
         noshow (bool, optional): If True, do not display the plot. Default is None.
         dpi (int, optional): Resolution of the saved plot. Default is 800.
@@ -375,10 +377,15 @@ def plotspecgram2(data:Data, Tlim=None, Wlim=None, end=-1, save=None, dB=None, z
         scale = "dB"
     else:
         scale = "linear"
-
+    
 
     # Compute the spectrogram
     Pxx, freqs, bins, im = ax.specgram(AT, NFFT=700, noverlap=650, Fs=t_sampling, scale=scale, xextent=xextent, cmap=cmap)
+
+
+    # Update the colorbar limits if vlim is provided
+    if vlim:
+        im.set_clim(vlim)
 
     # Add interactive colorbar
     cbar = fig.colorbar(im, ax=ax, label='Power/Frequency (dB/Hz)' if dB else 'Power/Frequency', location="bottom", aspect=50)
