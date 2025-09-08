@@ -6,6 +6,7 @@ Created on Fri Jun 30 10:37:39 2023
 """
 
 import numpy as np
+import math
 import re
 from scipy.fftpack import fft, ifft, fftshift, ifftshift, fftfreq
 import pickle
@@ -521,7 +522,7 @@ class Fibra:
         if self.betas != 0:
             beta1 = 0
             for i, beta in enumerate(self.betas):
-                beta1 += beta * w ** (i+1) / np.math.factorial(i+1)
+                beta1 += beta * w ** (i+1) / math.factorial(i+1)
         else:
             beta1 = self.beta2 * w + self.beta3 * w**2
         if self.beta1 != 0:
@@ -535,7 +536,7 @@ class Fibra:
         if self.betas != 0:
             beta2 = 0
             for i, beta in enumerate(self.betas):
-                beta2 += beta * w ** i / np.math.factorial(i)
+                beta2 += beta * w ** i / math.factorial(i)
         else:
             beta2 = self.beta2 + self.beta3 * w
         return beta2
@@ -622,7 +623,7 @@ def disp_op(sim:Sim, fib:Fibra):
     if fib.betas:
         D_w = 0
         for i in range(len(fib.betas)):
-            D_w = D_w + 1j*fib.betas[i]/np.math.factorial(i+2) * sim.omega**(i+2)
+            D_w = D_w + 1j*fib.betas[i]/math.factorial(i+2) * sim.omega**(i+2)
     
     #If beta1 != 0, add the corresponding term to the linear operator
     if fib.beta1:
