@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/923711611.svg)](https://doi.org/10.5281/zenodo.18164106)
+
 # NLSE Solver Base
 Base code for NLSE (Nonlinear Schrödinger Equation) Simulations.
 
